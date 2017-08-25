@@ -1,9 +1,16 @@
 package lwjar;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class PreCompileCommand implements Command {
 
@@ -25,6 +32,28 @@ public class PreCompileCommand implements Command {
     public void execute() throws IOException {
         this.copySourceFiles();
         this.copyClassesFiles();
+        this.compile();
+    }
+
+    private void compile() throws IOException {
+        List<String> sourceFiles = Files.walk(this.workSrcDir)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))
+                .map(file -> file.toAbsolutePath().toString())
+                .collect(toList());
+
+        List<String> javacOptions = new ArrayList<>();
+        javacOptions.add("-Xlint:none");
+        javacOptions.add("-d");
+        javacOptions.add(this.workClassesDir.toString());
+        javacOptions.add("-cp");
+        javacOptions.add(this.workSrcDir.toString());
+        javacOptions.add("-encoding");
+        javacOptions.add("UTF-8");
+        javacOptions.addAll(sourceFiles);
+
+        String[] args = javacOptions.toArray(new String[javacOptions.size()]);
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        compiler.run(null, null, null, args);
     }
 
     private void copySourceFiles() throws IOException {
@@ -45,7 +74,7 @@ public class PreCompileCommand implements Command {
                 }
 
                 try {
-                    Files.copy(javaFile, copyTo);
+                    Files.copy(javaFile, copyTo, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
                     throw new UncheckedIOException("failed to copy source file.", e);
                 }
@@ -53,6 +82,14 @@ public class PreCompileCommand implements Command {
     }
 
     private void copyClassesFiles() throws IOException {
+        if (Files.notExists(this.workClassesDir)) {
+            Files.createDirectories(this.workClassesDir);
+        }
+
+        if (this.classesFileDir == null) {
+            return;
+        }
+
         Files.walk(this.classesFileDir)
             .forEach(classFile -> {
                 Path relativePath = this.classesFileDir.relativize(classFile);
@@ -67,7 +104,7 @@ public class PreCompileCommand implements Command {
                 }
 
                 try {
-                    Files.copy(classFile, copyTo);
+                    Files.copy(classFile, copyTo, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
                     throw new UncheckedIOException("failed to copy class file.", e);
                 }
