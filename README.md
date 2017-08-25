@@ -15,3 +15,18 @@ task('collectSource') {
     }
 }
 ```
+
+## pre compile comamnd image
+```bash
+$ java -jar lightweight-jar.jar pre-compile -s to/src/dir -c to/classes/dir
+compiling...
+
+<output error source file paths (absolute path to use 'rm' command) ...>
+
+--- or ---
+
+completion!!
+```
+
+
+
