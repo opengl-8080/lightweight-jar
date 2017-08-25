@@ -24,6 +24,7 @@ public class PreCompileCommand implements Command {
     @Override
     public void execute() throws IOException {
         this.copySourceFiles();
+        this.copyClassesFiles();
     }
 
     private void copySourceFiles() throws IOException {
@@ -47,6 +48,28 @@ public class PreCompileCommand implements Command {
                     Files.copy(javaFile, copyTo);
                 } catch (IOException e) {
                     throw new UncheckedIOException("failed to copy source file.", e);
+                }
+            });
+    }
+
+    private void copyClassesFiles() throws IOException {
+        Files.walk(this.classesFileDir)
+            .forEach(classFile -> {
+                Path relativePath = this.classesFileDir.relativize(classFile);
+                Path copyTo = this.workClassesDir.resolve(relativePath);
+
+                if (Files.notExists(copyTo.getParent())) {
+                    try {
+                        Files.createDirectories(copyTo.getParent());
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("failed to create output directory.", e);
+                    }
+                }
+
+                try {
+                    Files.copy(classFile, copyTo);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("failed to copy class file.", e);
                 }
             });
     }
