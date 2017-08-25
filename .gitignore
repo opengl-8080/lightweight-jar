@@ -4,3 +4,5 @@ gradle/
 build/
 classes/
 lightweight-jar.iml 
+ignores 
+out 
