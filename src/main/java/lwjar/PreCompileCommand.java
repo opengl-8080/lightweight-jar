@@ -2,13 +2,21 @@ package lwjar;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.toList;
 
@@ -36,11 +44,27 @@ public class PreCompileCommand implements Command {
     }
 
     private void compile() throws IOException {
-        List<String> sourceFiles = Files.walk(this.workSrcDir)
+        List<String> sourceFiles = this.collectSourceFiles();
+        String[] args = this.buildJavacArgs(sourceFiles);
+
+        ByteArrayOutputStream error = new ByteArrayOutputStream();
+
+        int resultCode = ToolProvider.getSystemJavaCompiler()
+                            .run(null, null, error, args);
+
+        if (resultCode != 0) {
+            this.printErrorSourceCodePaths(error);
+        }
+    }
+
+    private List<String> collectSourceFiles() throws IOException {
+        return Files.walk(this.workSrcDir)
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
                 .map(file -> file.toAbsolutePath().toString())
                 .collect(toList());
+    }
 
+    private String[] buildJavacArgs(List<String> sourceFiles) {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
@@ -51,9 +75,29 @@ public class PreCompileCommand implements Command {
         javacOptions.add("UTF-8");
         javacOptions.addAll(sourceFiles);
 
-        String[] args = javacOptions.toArray(new String[javacOptions.size()]);
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        compiler.run(null, null, null, args);
+        return javacOptions.toArray(new String[javacOptions.size()]);
+    }
+
+    private void printErrorSourceCodePaths(ByteArrayOutputStream error) throws UnsupportedEncodingException {
+        String errorMessage = error.toString(Charset.defaultCharset().toString());
+        Pattern pattern = Pattern.compile("([^ \\r\\n]+\\.java)");
+        Matcher matcher = pattern.matcher(errorMessage);
+        Set<String> errorSrcPathSet = new HashSet<>();
+
+        while (matcher.find()) {
+            String sourcePath = matcher.group();
+            errorSrcPathSet.add(sourcePath);
+        }
+
+        System.err.println("Compile Errors are occurred!!");
+        System.err.println("Error source code paths are...");
+        System.err.println();
+        errorSrcPathSet.stream()
+                .map(Paths::get)
+                .map(this.workSrcDir.toAbsolutePath()::relativize)
+                .map(Path::toString)
+                .sorted()
+                .forEach(System.err::println);
     }
 
     private void copySourceFiles() throws IOException {
