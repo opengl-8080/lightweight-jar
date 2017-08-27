@@ -55,9 +55,6 @@ public class CommandLineOptions {
         if (sourceDir == null) {
             throw new CommandLineOptionException("'-s' option is required. Set source files directory path.");
         }
-        if (outDir == null) {
-            outDir = Paths.get("./out");
-        }
 
         return new PreCompileCommand(sourceDir, classesDir, outDir);
     }
