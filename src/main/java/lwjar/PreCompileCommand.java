@@ -22,10 +22,8 @@ public class PreCompileCommand implements Command {
     private final Path outDir;
     private final Path outSrcDir;
     private final Path outClassesDir;
-
+    
     private final Path workDir;
-    private final Path workSrcDir;
-    private final Path workClassesDir;
 
     public PreCompileCommand(Path orgSrcDir, Path orgClassesDir, Path outDir) {
         this.orgSrcDir = orgSrcDir;
@@ -34,25 +32,26 @@ public class PreCompileCommand implements Command {
         this.outDir = outDir == null ? Paths.get("./out") : outDir;
         this.outSrcDir = this.outDir.resolve("src");
         this.outClassesDir = this.outDir.resolve("classes");
-
+        
         this.workDir = this.outDir.resolve("work");
-        this.workSrcDir = this.workDir.resolve("src");
-        this.workClassesDir = this.workDir.resolve("classes");
     }
 
     @Override
     public void execute() throws IOException {
         this.copyOrgToOut();
+        this.createWorkDir();
 
         int cnt = 0;
         CompileResult result = this.compile();
 
         while (result.error) {
-            Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.workSrcDir);
-            this.copyErrorClassFilesFromOrgToOut(errorSourceFiles);
-            this.removeErrorJavaFileFromOut(errorSourceFiles);
+            Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.outSrcDir);
+
             System.out.println("remove error source files...");
             errorSourceFiles.forEach(System.out::println);
+            
+            this.copyErrorClassFilesFromOrgToOut(errorSourceFiles);
+            this.removeErrorJavaFileFromOut(errorSourceFiles);
 
             cnt++;
             if (100 < cnt) {
@@ -91,49 +90,57 @@ public class PreCompileCommand implements Command {
         });
     }
 
-    private void removeWorkDir() throws IOException {
-        if (Files.notExists(this.workDir)) {
-            return;
-        }
-
-        Files.walkFileTree(this.workDir, new SimpleFileVisitor<Path>() {
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-
-        });
-    }
-
     private CompileResult compile() throws IOException {
-        this.removeWorkDir();
-        this.copyOutToWork();
-
+        this.recreateWorkDir();
+        
         List<String> sourceFiles = this.collectSourceFiles();
         String[] args = this.buildJavacArgs(sourceFiles);
 
         ByteArrayOutputStream error = new ByteArrayOutputStream();
+
+        System.out.println("compiling...");
         int resultCode = ToolProvider.getSystemJavaCompiler()
                                 .run(null, null, error, args);
 
         return new CompileResult(resultCode != 0, error);
     }
-
-    private void copyOutToWork() throws IOException {
-        this.copyFileTree(this.outSrcDir, this.workSrcDir, ".java");
-        this.copyFileTree(this.outClassesDir, this.workClassesDir, ".class");
+    
+    private void recreateWorkDir() throws IOException {
+        System.out.println("recreate work directory...");
+        this.removeWorkDir();
+        this.createWorkDir();
+    }
+    
+    private void removeWorkDir() {
+        try {
+            Files.walkFileTree(this.workDir, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+    
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed remove work directory.", e);
+        }
+    }
+    
+    private void createWorkDir() {
+        try {
+            Files.createDirectories(this.workDir);
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed to create work directory.", e);
+        }
     }
 
     private List<String> collectSourceFiles() throws IOException {
-        return Files.walk(this.workSrcDir)
+        return Files.walk(this.outSrcDir)
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
                 .map(file -> file.toAbsolutePath().toString())
                 .collect(toList());
@@ -143,9 +150,9 @@ public class PreCompileCommand implements Command {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
-        javacOptions.add(this.workClassesDir.toString());
+        javacOptions.add(this.workDir.toString());
         javacOptions.add("-cp");
-        javacOptions.add(this.workSrcDir.toString());
+        javacOptions.add(this.outClassesDir.toString());
         javacOptions.add("-encoding");
         javacOptions.add("UTF-8");
         javacOptions.addAll(sourceFiles);
@@ -154,12 +161,18 @@ public class PreCompileCommand implements Command {
     }
 
     private void copyOrgToOut() throws IOException {
-        this.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
-
-        Files.createDirectories(this.outClassesDir);
-
-        if (this.orgClassesDir.isPresent()) {
-            this.copyFileTree(this.orgClassesDir.get(), this.outClassesDir, ".class");
+        if (Files.notExists(this.outSrcDir)) {
+            System.out.println("copying source files...");
+            this.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
+        }
+        
+        if (Files.notExists(this.outClassesDir)) {
+            if (this.orgClassesDir.isPresent()) {
+                System.out.println("copying class files...");
+                this.copyFileTree(this.orgClassesDir.get(), this.outClassesDir, ".class");
+            } else {
+                Files.createDirectories(this.outClassesDir);
+            }
         }
     }
 
@@ -197,20 +210,22 @@ public class PreCompileCommand implements Command {
             this.errorStream = errorStream;
         }
 
-        private Set<Path> getErrorSourceFiles(Path workSrcDir) throws IOException {
+        private Set<Path> getErrorSourceFiles(Path outSrcDir) throws IOException {
+            System.out.println("extracting error source files...");
+            
             String errorMessage = this.errorStream.toString(Charset.defaultCharset().toString());
-            Pattern pattern = Pattern.compile("([^ \\r\\n]+\\.java)");
+            Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
             Matcher matcher = pattern.matcher(errorMessage);
             Set<String> errorSrcPathSet = new HashSet<>();
 
             while (matcher.find()) {
-                String sourcePath = matcher.group();
+                String sourcePath = matcher.group(1);
                 errorSrcPathSet.add(sourcePath);
             }
 
             return errorSrcPathSet.stream()
                     .map(Paths::get)
-                    .map(workSrcDir.toAbsolutePath()::relativize)
+                    .map(outSrcDir.toAbsolutePath()::relativize)
                     .sorted()
                     .collect(toSet());
         }
