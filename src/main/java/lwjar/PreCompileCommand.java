@@ -1,5 +1,9 @@
 package lwjar;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.printer.PrettyPrinterConfiguration;
+
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,6 +14,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -22,6 +27,7 @@ public class PreCompileCommand implements Command {
     private final Path outDir;
     private final Path outSrcDir;
     private final Path outClassesDir;
+    private final Path outCompressedSrcDir;
     
     private final Path workDir;
 
@@ -32,6 +38,7 @@ public class PreCompileCommand implements Command {
         this.outDir = outDir == null ? Paths.get("./out") : outDir;
         this.outSrcDir = this.outDir.resolve("src");
         this.outClassesDir = this.outDir.resolve("classes");
+        this.outCompressedSrcDir = this.outDir.resolve("compressed");
         
         this.workDir = this.outDir.resolve("work");
     }
@@ -55,11 +62,46 @@ public class PreCompileCommand implements Command {
 
             cnt++;
             if (100 < cnt) {
-                break;
+                throw new TooManyCompileErrorException("too many compile errors are occurred.");
             }
 
             result = this.compile();
         }
+        
+        this.compressSourceFile();
+    }
+    
+    private void compressSourceFile() throws IOException {
+        System.out.println("compressing source...");
+        Files.walkFileTree(this.outSrcDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path outSrc, BasicFileAttributes attrs) throws IOException {
+                try {
+                    CompilationUnit cu = JavaParser.parse(outSrc);
+
+                    PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
+                    conf.setIndent("");
+                    conf.setPrintComments(false);
+                    conf.setPrintJavaDoc(false);
+                    conf.setEndOfLineCharacter(" ");
+
+                    String text = cu.toString(conf);
+
+                    Path relativePath = PreCompileCommand.this.outSrcDir.relativize(outSrc);
+                    Path compressed = PreCompileCommand.this.outCompressedSrcDir.resolve(relativePath);
+                    
+                    if (Files.notExists(compressed.getParent())) {
+                        Files.createDirectories(compressed.getParent());
+                    }
+
+                    Files.write(compressed, text.getBytes("UTF-8"));
+                } catch (IOException e) {
+                    throw new UncheckedIOException("failed to create compressed file.", e);
+                }
+                
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private void copyErrorClassFilesFromOrgToOut(Set<Path> errorSourceFiles) {
@@ -140,10 +182,11 @@ public class PreCompileCommand implements Command {
     }
 
     private List<String> collectSourceFiles() throws IOException {
-        return Files.walk(this.outSrcDir)
-                .filter(path -> path.getFileName().toString().endsWith(".java"))
-                .map(file -> file.toAbsolutePath().toString())
-                .collect(toList());
+        try (Stream<Path> s = Files.walk(this.outSrcDir)) {
+            return s.filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .map(file -> file.toAbsolutePath().toString())
+                    .collect(toList());
+        }
     }
 
     private String[] buildJavacArgs(List<String> sourceFiles) {
@@ -179,26 +222,27 @@ public class PreCompileCommand implements Command {
     private void copyFileTree(Path from, Path to, String endsWith) throws IOException {
         Files.createDirectories(to);
 
-        Files.walk(from)
-            .filter(path -> path.getFileName().toString().endsWith(endsWith))
-            .forEach(classFile -> {
-                Path relativePath = from.relativize(classFile);
-                Path copyTo = to.resolve(relativePath);
-
-                if (Files.notExists(copyTo.getParent())) {
-                    try {
-                        Files.createDirectories(copyTo.getParent());
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("failed to create output directory.", e);
+        try (Stream<Path> s = Files.walk(from)) {
+            s.filter(path -> path.getFileName().toString().endsWith(endsWith))
+                .forEach(classFile -> {
+                    Path relativePath = from.relativize(classFile);
+                    Path copyTo = to.resolve(relativePath);
+    
+                    if (Files.notExists(copyTo.getParent())) {
+                        try {
+                            Files.createDirectories(copyTo.getParent());
+                        } catch (IOException e) {
+                            throw new UncheckedIOException("failed to create output directory.", e);
+                        }
                     }
-                }
-
-                try {
-                    Files.copy(classFile, copyTo, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("failed to copy file.", e);
-                }
-            });
+    
+                    try {
+                        Files.copy(classFile, copyTo, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("failed to copy file.", e);
+                    }
+                });
+        }
     }
 
     private static class CompileResult {

@@ -6,7 +6,7 @@ public class Main {
             CommandLineOptions options = new CommandLineOptions(args);
             Command command = options.buildCommand();
             command.execute();
-        } catch (CommandLineOptionException e) {
+        } catch (CommandLineOptionException | TooManyCompileErrorException e) {
             System.err.println(e.getMessage());
             System.exit(2);
         } catch (Exception e) {
