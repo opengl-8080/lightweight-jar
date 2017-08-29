@@ -64,6 +64,7 @@ public class CommandLineOptions {
     }
     
     private PreCompileCommand buildPreCompileCommand() {
+        String encoding = null;
         Path sourceDir = null;
         Path classesDir = null;
         Path outDir = null;
@@ -88,6 +89,11 @@ public class CommandLineOptions {
                     throw new CommandLineOptionException("'-o' needs output directory path.");
                 }
                 outDir = Paths.get(ite.next());
+            } else if ("--encoding".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--encoding' needs charset name of source code.");
+                }
+                encoding = ite.next();
             } else {
                 throw new CommandLineOptionException("'pre-compile' command accepts options '-s', '-c' and '-o'. But you set unknown option > '" + arg + "'.");
             }
@@ -97,6 +103,6 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("'-s' option is required. Set source files directory path.");
         }
 
-        return new PreCompileCommand(sourceDir, classesDir, outDir);
+        return new PreCompileCommand(encoding, sourceDir, classesDir, outDir);
     }
 }

@@ -20,6 +20,8 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class PreCompileCommand implements Command {
+    
+    private final Charset encoding;
 
     private final Path orgSrcDir;
     private final Optional<Path> orgClassesDir;
@@ -30,7 +32,8 @@ public class PreCompileCommand implements Command {
     
     private final Path workDir;
 
-    public PreCompileCommand(Path orgSrcDir, Path orgClassesDir, Path outDir) {
+    public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir) {
+        this.encoding = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
         this.orgSrcDir = orgSrcDir;
         this.orgClassesDir = Optional.ofNullable(orgClassesDir);
 
@@ -92,7 +95,7 @@ public class PreCompileCommand implements Command {
                         Files.createDirectories(compressed.getParent());
                     }
 
-                    Files.write(compressed, text.getBytes("UTF-8"));
+                    Files.write(compressed, text.getBytes(PreCompileCommand.this.encoding));
                 } catch (IOException e) {
                     throw new UncheckedIOException("failed to create compressed file.", e);
                 }
@@ -195,7 +198,7 @@ public class PreCompileCommand implements Command {
         javacOptions.add("-cp");
         javacOptions.add(this.outSrcDir.toString());
         javacOptions.add("-encoding");
-        javacOptions.add("UTF-8");
+        javacOptions.add(this.encoding.toString());
         javacOptions.addAll(sourceFiles);
 
         return javacOptions.toArray(new String[javacOptions.size()]);
