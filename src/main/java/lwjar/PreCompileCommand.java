@@ -26,7 +26,6 @@ public class PreCompileCommand implements Command {
 
     private final Path outDir;
     private final Path outSrcDir;
-    private final Path outClassesDir;
     private final Path outCompressedSrcDir;
     
     private final Path workDir;
@@ -37,7 +36,6 @@ public class PreCompileCommand implements Command {
 
         this.outDir = outDir == null ? Paths.get("./out") : outDir;
         this.outSrcDir = this.outDir.resolve("src");
-        this.outClassesDir = this.outDir.resolve("classes");
         this.outCompressedSrcDir = this.outDir.resolve("compressed");
         
         this.workDir = this.outDir.resolve("work");
@@ -112,7 +110,7 @@ public class PreCompileCommand implements Command {
             Path classFile = javaFile.getParent().resolve(classFileName);
 
             Path orgClassFile = orgClassesDir.resolve(classFile);
-            Path outClassFile = this.outClassesDir.resolve(classFile);
+            Path outClassFile = this.outSrcDir.resolve(classFile);
             try {
                 Files.copy(orgClassFile, outClassFile, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
@@ -195,7 +193,7 @@ public class PreCompileCommand implements Command {
         javacOptions.add("-d");
         javacOptions.add(this.workDir.toString());
         javacOptions.add("-cp");
-        javacOptions.add(this.outClassesDir.toString());
+        javacOptions.add(this.outSrcDir.toString());
         javacOptions.add("-encoding");
         javacOptions.add("UTF-8");
         javacOptions.addAll(sourceFiles);
@@ -207,15 +205,6 @@ public class PreCompileCommand implements Command {
         if (Files.notExists(this.outSrcDir)) {
             System.out.println("copying source files...");
             this.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
-        }
-        
-        if (Files.notExists(this.outClassesDir)) {
-            if (this.orgClassesDir.isPresent()) {
-                System.out.println("copying class files...");
-                this.copyFileTree(this.orgClassesDir.get(), this.outClassesDir, ".class");
-            } else {
-                Files.createDirectories(this.outClassesDir);
-            }
         }
     }
 
