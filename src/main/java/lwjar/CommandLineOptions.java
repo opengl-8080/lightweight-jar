@@ -14,7 +14,12 @@ public class CommandLineOptions {
     }
 
     public Command buildCommand() {
+        if (this.args.isEmpty()) {
+            throw new CommandLineOptionException("please set command 'pre-compile' or 'package'.");
+        }
+        
         String commandName = this.args.get(0);
+        
         if ("pre-compile".equals(commandName)) {
             return this.buildPreCompileCommand();
         } else if ("package".equals(commandName)) {
@@ -25,9 +30,12 @@ public class CommandLineOptions {
     }
 
     private PackageCommand buildPackageCommand() {
+        String jarBase = null;
+        String encoding = null;
         Path srcDir = null;
         boolean springBoot = false;
         String mainClass = null;
+        Path outDir = null;
 
         Iterator<String> ite = this.args.iterator();
         ite.next(); // skip command token.
@@ -47,6 +55,21 @@ public class CommandLineOptions {
                     throw new CommandLineOptionException("'--main-class' needs Main Class FQCN.");
                 }
                 mainClass = ite.next();
+            } else if ("--encoding".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--encoding' needs charset name of source code.");
+                }
+                encoding = ite.next();
+            } else if ("-o".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'-o' needs output directory path.");
+                }
+                outDir = Paths.get(ite.next());
+            } else if ("--jar-base".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--jar-base' needs output jar name.");
+                }
+                jarBase = ite.next();
             } else {
                 throw new CommandLineOptionException("'package' command accepts options '-s', '--main-class' and '--spring-boot'. But you set unknown option > '" + arg + "'.");
             }
@@ -60,7 +83,11 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("'--main-class' is required when you set '--spring-boot' option.");
         }
         
-        return new PackageCommand(srcDir, springBoot, mainClass);
+        if (jarBase == null) {
+            throw new CommandLineOptionException("'--jar-base' is required. Set output jar file name.");
+        }
+        
+        return new PackageCommand(encoding, jarBase, srcDir, springBoot, mainClass, outDir);
     }
     
     private PreCompileCommand buildPreCompileCommand() {

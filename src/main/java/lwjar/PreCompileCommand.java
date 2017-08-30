@@ -207,35 +207,10 @@ public class PreCompileCommand implements Command {
     private void copyOrgToOut() throws IOException {
         if (Files.notExists(this.outSrcDir)) {
             System.out.println("copying source files...");
-            this.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
+            FileUtil.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
         }
     }
 
-    private void copyFileTree(Path from, Path to, String endsWith) throws IOException {
-        Files.createDirectories(to);
-
-        try (Stream<Path> s = Files.walk(from)) {
-            s.filter(path -> path.getFileName().toString().endsWith(endsWith))
-                .forEach(classFile -> {
-                    Path relativePath = from.relativize(classFile);
-                    Path copyTo = to.resolve(relativePath);
-    
-                    if (Files.notExists(copyTo.getParent())) {
-                        try {
-                            Files.createDirectories(copyTo.getParent());
-                        } catch (IOException e) {
-                            throw new UncheckedIOException("failed to create output directory.", e);
-                        }
-                    }
-    
-                    try {
-                        Files.copy(classFile, copyTo, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("failed to copy file.", e);
-                    }
-                });
-        }
-    }
 
     private static class CompileResult {
         private final boolean error;
