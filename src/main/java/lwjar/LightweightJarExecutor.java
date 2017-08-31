@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -25,6 +24,14 @@ import static java.util.stream.Collectors.*;
 public class LightweightJarExecutor {
 
     public static void main(String[] args) throws Exception {
+        new LightweightJarExecutor().execute(args);
+    }
+    
+    private Manifest manifest;
+    
+    private void execute(String[] args) throws Exception {
+        this.loadManifest();
+        
         Path workDir = Paths.get("./out/execute");
         if (Files.notExists(workDir)) {
             Files.createDirectories(workDir);
@@ -35,27 +42,37 @@ public class LightweightJarExecutor {
         }
         Path srcDir = workDir.resolve("src");
 
-        extractSourceFiles(workDir);
-        compile(srcDir, classesDir);
-        execute(classesDir, args);
+        this.extractSourceFiles(workDir);
+        this.compile(srcDir, classesDir);
+        this.executeMainClass(classesDir, args);
     }
     
-    private static void execute(Path classesDir, String[] args) {
-        try (InputStream in = LightweightJarExecutor.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
-            Manifest manifest = new Manifest(in);
-            String actualMainClass = (String)manifest.getMainAttributes().get(new Attributes.Name("Actual-Main-Class"));
-            
+    private void loadManifest() {
+        try (InputStream in = this.getClass().getResourceAsStream("/META-INF/MANIFEST.MF")) {
+            this.manifest = new Manifest(in);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    private String getManifestAttribute(String name) {
+        return (String)this.manifest.getMainAttributes().get(new Attributes.Name(name));
+    }
+    
+    private void executeMainClass(Path classesDir, String[] args) {
+        try {
             URL url = classesDir.toUri().toURL();
             ClassLoader classLoader = URLClassLoader.newInstance(new URL[]{url}, LightweightJarExecutor.class.getClassLoader());
+            String actualMainClass = this.getManifestAttribute("Actual-Main-Class");
             Class<?> mainClass = Class.forName(actualMainClass, true, classLoader);
             Method mainMethod = mainClass.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object)args);
         } catch (IOException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
     
-    private static void compile(Path srcDir, Path classesDir) throws IOException {
+    private void compile(Path srcDir, Path classesDir) throws IOException {
         List<String> sourceFiles = collectSourceFiles(srcDir);
         String[] javacArgs = buildJavacArgs(sourceFiles, srcDir, classesDir);
 
@@ -66,7 +83,7 @@ public class LightweightJarExecutor {
         }
     }
     
-    private static List<String> collectSourceFiles(Path srcDir) throws IOException {
+    private List<String> collectSourceFiles(Path srcDir) throws IOException {
         try (Stream<Path> s = Files.walk(srcDir)) {
             return s.filter(path -> path.getFileName().toString().endsWith(".java"))
                     .map(file -> file.toAbsolutePath().toString())
@@ -74,7 +91,7 @@ public class LightweightJarExecutor {
         }
     }
     
-    private static String[] buildJavacArgs(List<String> sourceFiles, Path srcDir, Path classesDir) {
+    private String[] buildJavacArgs(List<String> sourceFiles, Path srcDir, Path classesDir) {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
@@ -82,14 +99,13 @@ public class LightweightJarExecutor {
         javacOptions.add("-cp");
         javacOptions.add(srcDir.toString());
         javacOptions.add("-encoding");
-        javacOptions.add("UTF-8");
+        javacOptions.add(this.getManifestAttribute("Javac-Encoding"));
         javacOptions.addAll(sourceFiles);
 
         return javacOptions.toArray(new String[javacOptions.size()]);
     }
 
-
-    private static void extractSourceFiles(Path workDir) throws IOException {
+    private void extractSourceFiles(Path workDir) throws IOException {
         System.out.println("copy source files...");
         findThisJarFile()
                 .stream()
@@ -113,7 +129,7 @@ public class LightweightJarExecutor {
                 });
     }
     
-    private static JarFile findThisJarFile() throws IOException {
+    private JarFile findThisJarFile() throws IOException {
         URL location = LightweightJarExecutor.class.getProtectionDomain().getCodeSource().getLocation();
         return new JarFile(location.getFile());
     }

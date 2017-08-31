@@ -84,12 +84,12 @@ public class PackageCommand implements Command {
         manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, LightweightJarExecutor.class.getName());
         String mainClassName = this.mainClass.orElseThrow(() -> new IllegalStateException("main class is required."));
         manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), mainClassName);
+        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), this.encoding.name());
 
         try (
             FileOutputStream file = new FileOutputStream(this.outDir.resolve(this.jarBase + ".jar").toFile());
             JarOutputStream jar = new JarOutputStream(file, manifest);
         ) {
-            
             
             Files.walkFileTree(workDir, new SimpleFileVisitor<Path>() {
                 @Override
