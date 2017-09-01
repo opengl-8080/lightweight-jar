@@ -26,9 +26,9 @@ public class PreCompileCommand implements Command {
     private final Path orgSrcDir;
     private final Optional<Path> orgClassesDir;
 
-    private final Path outDir;
     private final Path outSrcDir;
     private final Path outCompressedSrcDir;
+    private final Path compileErrorLog;
     
     private final Path workDir;
 
@@ -37,11 +37,15 @@ public class PreCompileCommand implements Command {
         this.orgSrcDir = orgSrcDir;
         this.orgClassesDir = Optional.ofNullable(orgClassesDir);
 
-        this.outDir = outDir == null ? Paths.get("./out") : outDir;
-        this.outSrcDir = this.outDir.resolve("src");
-        this.outCompressedSrcDir = this.outDir.resolve("compressed");
+        if (outDir == null) {
+            outDir = Paths.get("./out");
+        }
         
-        this.workDir = this.outDir.resolve("work");
+        this.outSrcDir = outDir.resolve("src");
+        this.outCompressedSrcDir = outDir.resolve("compressed");
+        this.compileErrorLog = outDir.resolve("compile-errors.log");
+        
+        this.workDir = outDir.resolve("work");
     }
 
     @Override
@@ -77,6 +81,10 @@ public class PreCompileCommand implements Command {
         Files.walkFileTree(this.outSrcDir, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path outSrc, BasicFileAttributes attrs) throws IOException {
+                if (!outSrc.getFileName().toString().endsWith(".java")) {
+                    return FileVisitResult.CONTINUE;
+                }
+                
                 try {
                     CompilationUnit cu = JavaParser.parse(outSrc);
 
@@ -145,7 +153,13 @@ public class PreCompileCommand implements Command {
         int resultCode = ToolProvider.getSystemJavaCompiler()
                                 .run(null, null, error, args);
 
-        return new CompileResult(resultCode != 0, error);
+        String errorMessage = error.toString(Charset.defaultCharset().toString());
+        
+        if (!errorMessage.isEmpty()) {
+            Files.write(this.compileErrorLog, error.toByteArray(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+        }
+        
+        return new CompileResult(resultCode != 0, errorMessage);
     }
     
     private void recreateWorkDir() throws IOException {
@@ -214,19 +228,18 @@ public class PreCompileCommand implements Command {
 
     private static class CompileResult {
         private final boolean error;
-        private final ByteArrayOutputStream errorStream;
+        private final String errorMessage;
 
-        private CompileResult(boolean error, ByteArrayOutputStream errorStream) {
+        private CompileResult(boolean error, String errorMessage) {
             this.error = error;
-            this.errorStream = errorStream;
+            this.errorMessage = errorMessage;
         }
 
         private Set<Path> getErrorSourceFiles(Path outSrcDir) throws IOException {
             System.out.println("extracting error source files...");
             
-            String errorMessage = this.errorStream.toString(Charset.defaultCharset().toString());
             Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
-            Matcher matcher = pattern.matcher(errorMessage);
+            Matcher matcher = pattern.matcher(this.errorMessage);
             Set<String> errorSrcPathSet = new HashSet<>();
 
             while (matcher.find()) {
