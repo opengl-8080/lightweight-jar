@@ -27,7 +27,6 @@ public class PreCompileCommand implements Command {
     private final Optional<Path> orgClassesDir;
 
     private final Path outSrcDir;
-    private final Path outCompressedSrcDir;
     private final Path compileErrorLog;
     
     private final Path workDir;
@@ -42,7 +41,6 @@ public class PreCompileCommand implements Command {
         }
         
         this.outSrcDir = outDir.resolve("src");
-        this.outCompressedSrcDir = outDir.resolve("compressed");
         this.compileErrorLog = outDir.resolve("compile-errors.log");
         
         this.workDir = outDir.resolve("work");
@@ -57,13 +55,7 @@ public class PreCompileCommand implements Command {
         CompileResult result = this.compile();
 
         while (result.error) {
-            Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.outSrcDir);
-
-            System.out.println("remove error source files...");
-            errorSourceFiles.forEach(System.out::println);
-            
-            this.copyErrorClassFilesFromOrgToOut(errorSourceFiles);
-            this.removeErrorJavaFileFromOut(errorSourceFiles);
+            this.replaceErrorFiles(result);
 
             cnt++;
             if (100 < cnt) {
@@ -72,45 +64,53 @@ public class PreCompileCommand implements Command {
 
             result = this.compile();
         }
-        
-        this.compressSourceFile();
     }
-    
-    private void compressSourceFile() throws IOException {
-        System.out.println("compressing source...");
-        Files.walkFileTree(this.outSrcDir, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path outSrc, BasicFileAttributes attrs) throws IOException {
-                if (!outSrc.getFileName().toString().endsWith(".java")) {
-                    return FileVisitResult.CONTINUE;
-                }
-                
-                try {
-                    CompilationUnit cu = JavaParser.parse(outSrc);
 
-                    PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
-                    conf.setIndent("");
-                    conf.setPrintComments(false);
-                    conf.setPrintJavaDoc(false);
-                    conf.setEndOfLineCharacter(" ");
+    private void copyOrgToOut() throws IOException {
+        if (Files.exists(this.outSrcDir)) {
+            return;
+        }
 
-                    String text = cu.toString(conf);
+        System.out.println("copy and compressing source files...");
+        FileUtil.copyFileTree(this.orgSrcDir, this.outSrcDir, (inPath, outPath) -> {
+            if (this.isJavaSource(inPath)) {
+                CompilationUnit cu = JavaParser.parse(inPath, this.encoding);
 
-                    Path relativePath = PreCompileCommand.this.outSrcDir.relativize(outSrc);
-                    Path compressed = PreCompileCommand.this.outCompressedSrcDir.resolve(relativePath);
-                    
-                    if (Files.notExists(compressed.getParent())) {
-                        Files.createDirectories(compressed.getParent());
-                    }
+                PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
+                conf.setIndent("");
+                conf.setPrintComments(false);
+                conf.setPrintJavaDoc(false);
+                conf.setEndOfLineCharacter(" ");
 
-                    Files.write(compressed, text.getBytes(PreCompileCommand.this.encoding));
-                } catch (IOException e) {
-                    throw new UncheckedIOException("failed to create compressed file.", e);
-                }
-                
-                return FileVisitResult.CONTINUE;
+                String text = cu.toString(conf);
+
+                Files.write(outPath, text.getBytes(this.encoding), StandardOpenOption.CREATE);
+            } else {
+                Files.copy(inPath, outPath, StandardCopyOption.REPLACE_EXISTING);
             }
         });
+    }
+
+    private boolean isJavaSource(Path file) {
+        return file.getFileName().toString().endsWith(".java");
+    }
+
+    private void createWorkDir() {
+        try {
+            Files.createDirectories(this.workDir);
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed to create work directory.", e);
+        }
+    }
+
+    private void replaceErrorFiles(CompileResult result) throws IOException {
+        Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.outSrcDir);
+
+        System.out.println("remove error source files...");
+        errorSourceFiles.forEach(System.out::println);
+
+        this.copyErrorClassFilesFromOrgToOut(errorSourceFiles);
+        this.removeErrorJavaFileFromOut(errorSourceFiles);
     }
 
     private void copyErrorClassFilesFromOrgToOut(Set<Path> errorSourceFiles) {
@@ -143,7 +143,7 @@ public class PreCompileCommand implements Command {
 
     private CompileResult compile() throws IOException {
         this.recreateWorkDir();
-        
+
         List<String> sourceFiles = this.collectSourceFiles();
         String[] args = this.buildJavacArgs(sourceFiles);
 
@@ -151,14 +151,14 @@ public class PreCompileCommand implements Command {
 
         System.out.println("compiling...");
         int resultCode = ToolProvider.getSystemJavaCompiler()
-                                .run(null, null, error, args);
+                .run(null, null, error, args);
 
         String errorMessage = error.toString(Charset.defaultCharset().toString());
-        
+
         if (!errorMessage.isEmpty()) {
             Files.write(this.compileErrorLog, error.toByteArray(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
         }
-        
+
         return new CompileResult(resultCode != 0, errorMessage);
     }
     
@@ -187,18 +187,10 @@ public class PreCompileCommand implements Command {
             throw new UncheckedIOException("failed remove work directory.", e);
         }
     }
-    
-    private void createWorkDir() {
-        try {
-            Files.createDirectories(this.workDir);
-        } catch (IOException e) {
-            throw new UncheckedIOException("failed to create work directory.", e);
-        }
-    }
 
     private List<String> collectSourceFiles() throws IOException {
         try (Stream<Path> s = Files.walk(this.outSrcDir)) {
-            return s.filter(path -> path.getFileName().toString().endsWith(".java"))
+            return s.filter(this::isJavaSource)
                     .map(file -> file.toAbsolutePath().toString())
                     .collect(toList());
         }
@@ -217,14 +209,7 @@ public class PreCompileCommand implements Command {
 
         return javacOptions.toArray(new String[javacOptions.size()]);
     }
-
-    private void copyOrgToOut() throws IOException {
-        if (Files.notExists(this.outSrcDir)) {
-            System.out.println("copying source files...");
-            FileUtil.copyFileTree(this.orgSrcDir, this.outSrcDir, ".java");
-        }
-    }
-
+    
 
     private static class CompileResult {
         private final boolean error;
