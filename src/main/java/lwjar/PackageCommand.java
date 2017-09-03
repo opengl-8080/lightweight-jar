@@ -1,9 +1,6 @@
 package lwjar;
 
-import javax.tools.ToolProvider;
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +14,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -25,12 +21,13 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
 public class PackageCommand implements Command {
+    private static final String SOURCE_RESOURCE_PATH = "src";
     private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
     private final Charset encoding;
     private final String jarBase;
     private final Path srcDir;
     private final boolean springBoot;
-    private final Optional<String> mainClass;
+    private final String mainClass;
     
     private final Path outDir;
 
@@ -39,7 +36,7 @@ public class PackageCommand implements Command {
         this.jarBase = jarBase;
         this.srcDir = srcDir;
         this.springBoot = springBoot;
-        this.mainClass = Optional.ofNullable(mainClass);
+        this.mainClass = mainClass;
         this.outDir = outDir == null ? Paths.get("./out") : outDir;
     }
 
@@ -79,23 +76,17 @@ public class PackageCommand implements Command {
     }
     
     private void createJarFile(Path workDir) throws IOException {
-        Manifest manifest = new Manifest();
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, LightweightJarExecutor.class.getName());
-        String mainClassName = this.mainClass.orElseThrow(() -> new IllegalStateException("main class is required."));
-        manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), mainClassName);
-        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), this.encoding.name());
 
         try (
             FileOutputStream file = new FileOutputStream(this.outDir.resolve(this.jarBase + ".jar").toFile());
-            JarOutputStream jar = new JarOutputStream(file, manifest);
+            JarOutputStream jar = new JarOutputStream(file, this.createManifest());
         ) {
             
             Files.walkFileTree(workDir, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                     Path relativePath = workDir.toAbsolutePath().relativize(dir.toAbsolutePath());
-                    String path = "src/" + relativePath.toString().replace("\\", "/");
+                    String path = SOURCE_RESOURCE_PATH + "/" + relativePath.toString().replace("\\", "/");
                     if (!path.endsWith("/")) {
                         path = path + "/";
                     }
@@ -105,13 +96,13 @@ public class PackageCommand implements Command {
 
                     return FileVisitResult.CONTINUE;
                 }
-
+                
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     Path relativePath = workDir.toAbsolutePath().relativize(file.toAbsolutePath());
                     String path = relativePath.toString().replace("\\", "/");
                     if (!isMainClass(file)) {
-                        path = "src/" + path;
+                        path = SOURCE_RESOURCE_PATH + "/" + path;
                     }
                     JarEntry entry = new JarEntry(path);
                     jar.putNextEntry(entry);
@@ -129,7 +120,22 @@ public class PackageCommand implements Command {
                     return FileVisitResult.CONTINUE;
                 }
             });
+
+            jar.closeEntry();
         }
+    }
+
+    private Manifest createManifest() {
+        Manifest manifest = new Manifest();
+        
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, LightweightJarExecutor.class.getName());
+        
+        manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), this.mainClass);
+        manifest.getMainAttributes().put(new Attributes.Name("Is-Spring-Boot"), String.valueOf(this.springBoot));
+        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), this.encoding.name());
+        
+        return manifest;
     }
     
     private boolean isMainClass(JarEntry entry) {

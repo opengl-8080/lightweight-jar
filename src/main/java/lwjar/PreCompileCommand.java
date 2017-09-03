@@ -85,7 +85,7 @@ public class PreCompileCommand implements Command {
                 String text = cu.toString(conf);
 
                 Files.write(outPath, text.getBytes(this.encoding), StandardOpenOption.CREATE);
-            } else {
+            } else if (!inPath.getFileName().toString().equals("MANIFEST.MF")) {
                 Files.copy(inPath, outPath, StandardCopyOption.REPLACE_EXISTING);
             }
         });

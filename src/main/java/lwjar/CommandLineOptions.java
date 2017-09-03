@@ -79,8 +79,8 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("'-s' is required. Set source files directory path.");
         }
         
-        if (!springBoot && mainClass == null) {
-            throw new CommandLineOptionException("'--main-class' is required when you set '--spring-boot' option.");
+        if (mainClass == null) {
+            throw new CommandLineOptionException("'--main-class' is required. Set main class FQCN.");
         }
         
         if (jarBase == null) {

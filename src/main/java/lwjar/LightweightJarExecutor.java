@@ -28,23 +28,43 @@ public class LightweightJarExecutor {
     }
     
     private Manifest manifest;
+    private final Path workDir = Paths.get("./out/runtime");
+    private Path classesDir = this.workDir.resolve("classes");
+    private Path srcDir = this.workDir.resolve("src");
     
     private void execute(String[] args) throws Exception {
         this.loadManifest();
         
-        Path workDir = Paths.get("./out/execute");
-        if (Files.notExists(workDir)) {
-            Files.createDirectories(workDir);
-        }
-        Path classesDir = workDir.resolve("classes");
-        if (Files.notExists(classesDir)) {
-            Files.createDirectories(classesDir);
-        }
-        Path srcDir = workDir.resolve("src");
+        this.createDirectories(this.workDir);
+        this.createDirectories(this.classesDir);
 
-        this.extractSourceFiles(workDir);
-        this.compile(srcDir, classesDir);
-        this.executeMainClass(classesDir, args);
+        this.extractSourceFiles();
+        this.compile();
+        if (this.isSpringBoot()) {
+            this.createSpringBootManifest();
+        }
+        this.executeMainClass(args);
+    }
+    
+    private void createDirectories(Path dir) throws IOException {
+        if (Files.exists(dir)) {
+            return;
+        }
+        
+        Files.createDirectories(dir);
+    }
+    
+    private boolean isSpringBoot() {
+        return Boolean.valueOf(this.getManifestAttribute("Is-Spring-Boot"));
+    }
+    
+    private void createSpringBootManifest() throws IOException {
+        Path metaInf = this.classesDir.resolve("META-INF");
+        this.createDirectories(metaInf);
+
+        Path manifest = metaInf.resolve("MANIFEST.MF");
+        String content = "Start-Class: " + this.getManifestAttribute("Actual-Main-Class") + "\n";
+        Files.write(manifest, content.getBytes());
     }
     
     private void loadManifest() {
@@ -59,12 +79,12 @@ public class LightweightJarExecutor {
         return (String)this.manifest.getMainAttributes().get(new Attributes.Name(name));
     }
     
-    private void executeMainClass(Path classesDir, String[] args) {
+    private void executeMainClass(String[] args) {
         try {
-            URL url = classesDir.toUri().toURL();
+            URL url = this.classesDir.toUri().toURL();
             ClassLoader classLoader = URLClassLoader.newInstance(new URL[]{url}, LightweightJarExecutor.class.getClassLoader());
-            String actualMainClass = this.getManifestAttribute("Actual-Main-Class");
-            Class<?> mainClass = Class.forName(actualMainClass, true, classLoader);
+            String mainClassName = this.resolveMainClassName();
+            Class<?> mainClass = Class.forName(mainClassName, true, classLoader);
             Method mainMethod = mainClass.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object)args);
         } catch (IOException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
@@ -72,9 +92,14 @@ public class LightweightJarExecutor {
         }
     }
     
-    private void compile(Path srcDir, Path classesDir) throws IOException {
-        List<String> sourceFiles = collectSourceFiles(srcDir);
-        String[] javacArgs = buildJavacArgs(sourceFiles, srcDir, classesDir);
+    private String resolveMainClassName() {
+        return this.isSpringBoot() ? "org.springframework.boot.loader.JarLauncher"
+                                   : this.getManifestAttribute("Actual-Main-Class");
+    }
+    
+    private void compile() throws IOException {
+        List<String> sourceFiles = collectSourceFiles(this.srcDir);
+        String[] javacArgs = buildJavacArgs(sourceFiles, this.srcDir, this.classesDir);
 
         System.out.println("compiling...");
         int resultCode = ToolProvider.getSystemJavaCompiler().run(null, null, null, javacArgs);
@@ -105,14 +130,14 @@ public class LightweightJarExecutor {
         return javacOptions.toArray(new String[javacOptions.size()]);
     }
 
-    private void extractSourceFiles(Path workDir) throws IOException {
+    private void extractSourceFiles() throws IOException {
         System.out.println("copy source files...");
         findThisJarFile()
                 .stream()
                 .filter(e -> e.getName().startsWith("src/") && !e.isDirectory())
                 .forEach(entry -> {
                     Path path = Paths.get(entry.getName());
-                    Path outPath = workDir.resolve(path);
+                    Path outPath = this.workDir.resolve(path);
                     if (Files.notExists(outPath.getParent())) {
                         try {
                             Files.createDirectories(outPath.getParent());
