@@ -9,15 +9,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
 public class PreCompileCommand implements Command {
     
@@ -117,15 +126,24 @@ public class PreCompileCommand implements Command {
         Path orgClassesDir = this.orgClassesDir.orElseThrow(() -> new IllegalStateException("-c options is not set. please set classes directory path."));
 
         errorSourceFiles.forEach(javaFile -> {
-            String classFileName = javaFile.getFileName().toString().replace(".java", ".class");
-            Path classFile = javaFile.getParent().resolve(classFileName);
+            String className = javaFile.getFileName().toString().replaceAll("\\.java$", "");
+            Path classFileDir = orgClassesDir.resolve(javaFile.getParent());
+            
+            try (Stream<Path> files = Files.list(classFileDir)) {
+                files
+                    .filter(file -> file.getFileName().toString().startsWith(className))
+                    .forEach(orgClassFile -> {
+                        Path classFilePath = orgClassesDir.relativize(orgClassFile);
+                        Path outClassFile = this.outSrcDir.resolve(classFilePath);
 
-            Path orgClassFile = orgClassesDir.resolve(classFile);
-            Path outClassFile = this.outSrcDir.resolve(classFile);
-            try {
-                Files.copy(orgClassFile, outClassFile, StandardCopyOption.REPLACE_EXISTING);
+                        try {
+                            Files.copy(orgClassFile, outClassFile, StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException("failed to copy file.", e);
+                        }
+                    });
             } catch (IOException e) {
-                throw new UncheckedIOException("failed to copy file.", e);
+                throw new UncheckedIOException(e);
             }
         });
     }

@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -81,15 +82,21 @@ public class LightweightJarExecutor {
     
     private void executeMainClass(String[] args) {
         try {
-            URL url = this.classesDir.toUri().toURL();
-            ClassLoader classLoader = URLClassLoader.newInstance(new URL[]{url}, LightweightJarExecutor.class.getClassLoader());
+            URL[] classpath = this.createClasspath();
+            ClassLoader classLoader = URLClassLoader.newInstance(classpath, LightweightJarExecutor.class.getClassLoader());
             String mainClassName = this.resolveMainClassName();
             Class<?> mainClass = Class.forName(mainClassName, true, classLoader);
             Method mainMethod = mainClass.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object)args);
-        } catch (IOException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
+        } catch (MalformedURLException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    private URL[] createClasspath() throws MalformedURLException {
+        URL classpathClasses = this.classesDir.toUri().toURL();
+        URL classpathSrc = this.srcDir.toUri().toURL();
+        return new URL[]{classpathClasses, classpathSrc};
     }
     
     private String resolveMainClassName() {
