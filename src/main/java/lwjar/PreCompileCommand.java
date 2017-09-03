@@ -73,6 +73,73 @@ public class PreCompileCommand implements Command {
 
             result = this.compile();
         }
+        
+        this.copyClassFileOnly();
+    }
+    
+    private void copyClassFileOnly() throws IOException {
+        if (!this.orgClassesDir.isPresent()) {
+            return;
+        }
+
+        System.out.println("coping class files only binary jar files...");
+        Path orgClassesDir = this.orgClassesDir.get();
+        
+        Files.walkFileTree(orgClassesDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (!isClassFile(file)) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                String className = extractClassName(file);
+                Path relativeParentDir = orgClassesDir.relativize(file.getParent());
+                
+                Path relativeSource = relativeParentDir.resolve(className + ".java");
+                Path expectedSource = outSrcDir.resolve(relativeSource);
+                
+                if (Files.exists(expectedSource)) {
+                    // ok (this class was succeeded to compile)
+                    return FileVisitResult.CONTINUE;
+                }
+
+                Path relativeClass = orgClassesDir.relativize(file);
+                Path expectedClass = outSrcDir.resolve(relativeClass);
+                
+                if (Files.exists(expectedClass)) {
+                    // ok (this class was failed to compile but class file exists.)
+                    return FileVisitResult.CONTINUE;
+                }
+                
+                // class file exists in original jar file, but source file (or compiled class file) doesn't exist.
+                Path relativeOrgClass = orgClassesDir.relativize(file);
+                Path outPath = outSrcDir.resolve(relativeOrgClass);
+                if (Files.notExists(outPath.getParent())) {
+                    Files.createDirectories(outPath.getParent());
+                }
+                Files.copy(file, outPath, StandardCopyOption.REPLACE_EXISTING);
+
+                System.out.println(relativeOrgClass + " is copied.");
+                
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+    
+    private String extractClassName(Path file) {
+        String name = file.getFileName().toString();
+        
+        if (name.contains("$")) {
+            // inner class
+            String[] tokens = name.split("\\$");
+            return tokens[0];
+        }
+        
+        return name.replace(".class", "");
+    }
+    
+    private boolean isClassFile(Path file) {
+        return file.getFileName().toString().endsWith(".class");
     }
 
     private void copyOrgToOut() throws IOException {
