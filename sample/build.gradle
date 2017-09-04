@@ -1,0 +1,80 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.6.RELEASE'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    runtime 'org.springframework.boot:spring-boot-loader'
+}
+
+import groovy.io.FileType
+task('collectSource', dependsOn: 'eclipse') {
+    configurations.runtime.each { jarFile ->
+        jarFile.parentFile.parentFile.eachFileRecurse(FileType.FILES) { file ->
+            if (file.name =~ /^.*\.jar$/ && file.name.contains('source')) {
+                copy {
+                    from file
+                    into "$buildDir/dependencies/packaged/source"
+                }
+            }
+        }
+    }
+}
+
+task('collectJar') {
+    copy {
+        from configurations.runtime
+        into "$buildDir/dependencies/packaged/binary"
+    }
+}
+
+task('collectDependencies', dependsOn: ['collectJar', 'collectSource']) {
+    def jarList = []
+    new File("$buildDir/dependencies/packaged/binary").eachFile(FileType.FILES) { jar ->
+        if (jar.name.startsWith("slf4j-api")) {
+            /*
+             * Slf4j has some default implementation classes (like StaticLoggerBinder).
+             * They throw an UnsupportedOperationException, because they should be implemented by actual logger libraries.
+             * For example, Logback has these class implementations.
+             * Therefore slf4j-api must be unzipped before logger libraries.
+             * If slf4j-api is unzipped after logger libraries, there classes are overridden by default classes in slf4j-api.
+             */
+            jarList.add(0, jar)
+        } else {
+            jarList.add(jar)
+        }
+    }
+
+    jarList.each { jar ->
+        ant.unzip(src: jar, dest: "$buildDir/dependencies/unpackaged/binary")
+    }
+
+    def srcList = []
+    new File("$buildDir/dependencies/packaged/source").eachFile(FileType.FILES) { jar ->
+        if (jar.name.startsWith("slf4j-api")) {
+            srcList.add(0, jar)
+        } else {
+            srcList.add(jar)
+        }
+    }
+
+    srcList.each { src ->
+        ant.unzip(src: src, dest: "$buildDir/dependencies/unpackaged/source")
+    }
+}
