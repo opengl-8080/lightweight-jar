@@ -150,21 +150,28 @@ public class PreCompileCommand implements Command {
         System.out.println("copy and compressing source files...");
         FileUtil.copyFileTree(this.orgSrcDir, this.outSrcDir, (inPath, outPath) -> {
             if (this.isJavaSource(inPath)) {
-                CompilationUnit cu = JavaParser.parse(inPath, this.encoding);
-
-                PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
-                conf.setIndent("");
-                conf.setPrintComments(false);
-                conf.setPrintJavaDoc(false);
-                conf.setEndOfLineCharacter(" ");
-
-                String text = cu.toString(conf);
-
+                String text = this.compress(inPath);
                 Files.write(outPath, text.getBytes(this.encoding), StandardOpenOption.CREATE);
             } else if (!inPath.getFileName().toString().equals("MANIFEST.MF")) {
                 Files.copy(inPath, outPath, StandardCopyOption.REPLACE_EXISTING);
             }
         });
+    }
+    
+    private String compress(Path javaFile) throws IOException {
+//        return new String(Files.readAllBytes(javaFile), this.encoding);
+        CompilationUnit cu = JavaParser.parse(javaFile, this.encoding);
+        return this.removeLineSeparatorAndComments(cu);
+    }
+    
+    private String removeLineSeparatorAndComments(CompilationUnit cu) {
+        PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
+        conf.setIndent("");
+        conf.setPrintComments(false);
+        conf.setPrintJavaDoc(false);
+        conf.setEndOfLineCharacter(" ");
+        
+        return cu.toString(conf);
     }
 
     private boolean isJavaSource(Path file) {
