@@ -95,6 +95,7 @@ public class CommandLineOptions {
         Path sourceDir = null;
         Path classesDir = null;
         Path outDir = null;
+        Integer compressLevel = null;
 
         Iterator<String> ite = this.args.iterator();
         ite.next(); // skip command token.
@@ -121,6 +122,16 @@ public class CommandLineOptions {
                     throw new CommandLineOptionException("'--encoding' needs charset name of source code.");
                 }
                 encoding = ite.next();
+            } else if ("--compress-level".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--compress-level' needs number of level (0, 1, 2, 3, ...).");
+                }
+                String strCompressLevel = ite.next();
+                try {
+                    compressLevel = Integer.valueOf(strCompressLevel);
+                } catch (NumberFormatException e) {
+                    throw new CommandLineOptionException("--compress-level (" + strCompressLevel + ") must be number.");
+                }
             } else {
                 throw new CommandLineOptionException("'pre-compile' command accepts options '-s', '-c' and '-o'. But you set unknown option > '" + arg + "'.");
             }
@@ -130,6 +141,6 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("'-s' option is required. Set source files directory path.");
         }
 
-        return new PreCompileCommand(encoding, sourceDir, classesDir, outDir);
+        return new PreCompileCommand(encoding, sourceDir, classesDir, outDir, compressLevel);
     }
 }

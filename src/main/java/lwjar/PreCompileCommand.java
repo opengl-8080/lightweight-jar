@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,10 +41,32 @@ public class PreCompileCommand implements Command {
     
     private final Path workDir;
 
-    public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir) {
+    /**
+     * 0: no compress
+     * 1: remove comments
+     * 2: remove line separators
+     * 3: remove annotations (@Override, @SuppressWarnings, ...)
+     * 4: use asterisk import.
+     * 5: remove private modifiers.
+     * 6: rename local variables to more shorter.
+     * 7: and more...?
+     */
+    private final int compressLevel;
+    
+    private static class CompressLevel {
+        private static final int REMOVE_COMMENTS = 1;
+        private static final int REMOVE_LINE_SEPARATOR = 2;
+        private static final int REMOVE_ANNOTATIONS = 3;
+        private static final int USE_ASTARISK_IMPORT = 4;
+        private static final int REMOVE_PRIVATE_MODIFIERS = 5;
+        private static final int RENAME_LOCAL_VARIABLES = 6;
+    }
+
+    public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir, Integer compressLevel) {
         this.encoding = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
         this.orgSrcDir = orgSrcDir;
         this.orgClassesDir = Optional.ofNullable(orgClassesDir);
+        this.compressLevel = compressLevel == null ? CompressLevel.RENAME_LOCAL_VARIABLES : compressLevel;
 
         if (outDir == null) {
             outDir = Paths.get("./out");
@@ -75,6 +98,43 @@ public class PreCompileCommand implements Command {
         }
         
         this.copyClassFileOnly();
+        this.copyNoJavaAndClassFiles();
+    }
+    
+    private void copyNoJavaAndClassFiles() throws IOException {
+        if (!this.orgClassesDir.isPresent()) {
+            return;
+        }
+        
+        System.out.println("coping no java source files...");
+        Path orgClassesDir = this.orgClassesDir.get();
+
+        Files.walkFileTree(orgClassesDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (isJavaSource(file) || isClassFile(file)) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                // like, properties, spring.factories, etc...
+                Path relativePath = orgClassesDir.relativize(file);
+                Path toPath = outSrcDir.resolve(relativePath);
+
+                if (Files.exists(toPath)) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                if (Files.notExists(toPath.getParent())) {
+                    Files.createDirectories(toPath.getParent());
+                }
+                
+                Files.copy(file, toPath, StandardCopyOption.REPLACE_EXISTING);
+
+                System.out.println(relativePath + " is copied.");
+
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
     
     private void copyClassFileOnly() throws IOException {
@@ -159,17 +219,22 @@ public class PreCompileCommand implements Command {
     }
     
     private String compress(Path javaFile) throws IOException {
-//        return new String(Files.readAllBytes(javaFile), this.encoding);
         CompilationUnit cu = JavaParser.parse(javaFile, this.encoding);
         return this.removeLineSeparatorAndComments(cu);
     }
     
     private String removeLineSeparatorAndComments(CompilationUnit cu) {
         PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
-        conf.setIndent("");
-        conf.setPrintComments(false);
-        conf.setPrintJavaDoc(false);
-        conf.setEndOfLineCharacter(" ");
+        
+        if (CompressLevel.REMOVE_LINE_SEPARATOR <= this.compressLevel) {
+            conf.setIndent("");
+            conf.setEndOfLineCharacter(" ");
+        }
+
+        if (CompressLevel.REMOVE_COMMENTS <= this.compressLevel) {
+            conf.setPrintComments(false);
+            conf.setPrintJavaDoc(false);
+        }
         
         return cu.toString(conf);
     }
@@ -181,6 +246,9 @@ public class PreCompileCommand implements Command {
     private void createWorkDir() {
         try {
             Files.createDirectories(this.workDir);
+        } catch (AccessDeniedException e) {
+            // skip this. because this error is sometimes occurred without any problems. (I don't understand well...)
+            System.err.println("Warning: " + e.getClass() + " : " + e.getMessage());
         } catch (IOException e) {
             throw new UncheckedIOException("failed to create work directory.", e);
         }

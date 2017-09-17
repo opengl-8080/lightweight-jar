@@ -6,13 +6,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -88,15 +90,54 @@ public class LightweightJarExecutor {
             Class<?> mainClass = Class.forName(mainClassName, true, classLoader);
             Method mainMethod = mainClass.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object)args);
-        } catch (MalformedURLException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
+        } catch (IOException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
     
-    private URL[] createClasspath() throws MalformedURLException {
+    private URL[] createClasspath() throws IOException {
         URL classpathClasses = this.classesDir.toUri().toURL();
-        URL classpathSrc = this.srcDir.toUri().toURL();
-        return new URL[]{classpathClasses, classpathSrc};
+//        URL classpathSrc = this.srcDir.toUri().toURL();
+        this.copyClassAndResourceFiles();
+        return new URL[]{classpathClasses};
+    }
+    
+    private void copyClassAndResourceFiles() {
+        System.out.println("coping class and resource files from src directory to classes directory...");
+        try (Stream<Path> stream = Files.walk(this.srcDir)) {
+            stream
+                .filter(path -> {
+                    String name = path.getFileName().toString();
+                    return Files.isRegularFile(path) && !name.endsWith(".java") && !name.equals("MANIFEST.MF");
+                })
+                .forEach(from -> {
+                    Path relativeFrom = this.srcDir.relativize(from);
+                    Path to = this.classesDir.resolve(relativeFrom);
+                    this.createDirectoriesIfNotParentExists(to);
+                    this.copyFile(from, to);
+                });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+    
+    private void createDirectoriesIfNotParentExists(Path file) {
+        Path parent = file.getParent();
+        if (Files.notExists(parent)) {
+            try {
+                Files.createDirectories(parent);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+    
+    private void copyFile(Path from, Path to) {
+        try {
+            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
     
     private String resolveMainClassName() {
