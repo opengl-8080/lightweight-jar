@@ -2,6 +2,11 @@ package lwjar;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 
 import javax.tools.ToolProvider;
@@ -19,6 +24,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -236,7 +242,55 @@ public class PreCompileCommand implements Command {
             conf.setPrintJavaDoc(false);
         }
         
+        if (CompressLevel.REMOVE_ANNOTATIONS <= this.compressLevel) {
+            List<AnnotationExpr> removeTargetAnnotations = new ArrayList<>();
+            
+            cu.accept(new VoidVisitorAdapter<Void>() {
+                @Override
+                public void visit(MarkerAnnotationExpr n, Void arg) {
+                    if (isRemoveTarget(n)) {
+                        removeTargetAnnotations.add(n);
+                    }
+                    super.visit(n, arg);
+                }
+                @Override
+                public void visit(SingleMemberAnnotationExpr n, Void arg) {
+                    if (isRemoveTarget(n)) {
+                        removeTargetAnnotations.add(n);
+                    }
+                    super.visit(n, arg);
+                }
+                @Override
+                public void visit(NormalAnnotationExpr n, Void arg) {
+                    if (isRemoveTarget(n)) {
+                        removeTargetAnnotations.add(n);
+                    }
+                    super.visit(n, arg);
+                }
+            }, null);
+
+            // remove annotations.
+            removeTargetAnnotations.forEach(a -> a.getParentNode().ifPresent(p -> p.remove(a)));
+        }
+        
         return cu.toString(conf);
+    }
+
+    private static final Set<String> REMOVE_TARGET_ANNOTATION_NAMES;
+    static {
+        Set<String> set = new HashSet<>();
+        set.add("Override");
+        set.add("Deprecated");
+        set.add("Documented");
+        set.add("SuppressWarnings");
+        set.add("FunctionalInterface");
+        set.add("SafeVarargs");
+        REMOVE_TARGET_ANNOTATION_NAMES = Collections.unmodifiableSet(set);
+    }
+    
+    private boolean isRemoveTarget(AnnotationExpr annotation) {
+        String name = annotation.getName().asString();
+        return REMOVE_TARGET_ANNOTATION_NAMES.contains(name);
     }
 
     private boolean isJavaSource(Path file) {
