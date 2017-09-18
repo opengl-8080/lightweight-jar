@@ -2,10 +2,18 @@ package lwjar;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.body.AnnotationDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPrivateModifier;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 
@@ -63,9 +71,8 @@ public class PreCompileCommand implements Command {
         private static final int REMOVE_COMMENTS = 1;
         private static final int REMOVE_LINE_SEPARATOR = 2;
         private static final int REMOVE_ANNOTATIONS = 3;
-        private static final int USE_ASTARISK_IMPORT = 4;
-        private static final int REMOVE_PRIVATE_MODIFIERS = 5;
-        private static final int RENAME_LOCAL_VARIABLES = 6;
+        private static final int REMOVE_PRIVATE_MODIFIERS = 4;
+        private static final int RENAME_LOCAL_VARIABLES = 5;
     }
 
     public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir, Integer compressLevel) {
@@ -266,6 +273,56 @@ public class PreCompileCommand implements Command {
                         removeTargetAnnotations.add(n);
                     }
                     super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(FieldDeclaration n, Void arg) {
+                    this.removePrivateModifier(n);
+                    super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(MethodDeclaration n, Void arg) {
+                    this.removePrivateModifier(n);
+                    super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(ConstructorDeclaration n, Void arg) {
+                    this.removePrivateModifier(n);
+                    super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(ClassOrInterfaceDeclaration n, Void arg) {
+                    if (n.isInnerClass() || n.isNestedType()) {
+                        this.removePrivateModifier(n);
+                    }
+                    super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(EnumDeclaration n, Void arg) {
+                    if (n.isNestedType()) {
+                        this.removePrivateModifier(n);
+                    }
+                    super.visit(n, arg);
+                }
+
+                @Override
+                public void visit(AnnotationDeclaration n, Void arg) {
+                    if (n.isNestedType()) {
+                        this.removePrivateModifier(n);
+                    }
+                    super.visit(n, arg);
+                }
+
+                private void removePrivateModifier(NodeWithPrivateModifier node) {
+                    if (CompressLevel.REMOVE_PRIVATE_MODIFIERS <= compressLevel) {
+                        if (node.isPrivate()) {
+                            node.removeModifier(Modifier.PRIVATE);
+                        }
+                    }
                 }
             }, null);
 
