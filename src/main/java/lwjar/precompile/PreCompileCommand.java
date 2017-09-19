@@ -1,4 +1,8 @@
-package lwjar;
+package lwjar.precompile;
+
+import lwjar.Command;
+import lwjar.GlobalOption;
+import lwjar.TooManyCompileErrorException;
 
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;

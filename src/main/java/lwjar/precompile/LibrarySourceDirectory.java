@@ -1,4 +1,7 @@
-package lwjar;
+package lwjar.precompile;
+
+import lwjar.FileUtil;
+import lwjar.GlobalOption;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

@@ -1,4 +1,4 @@
-package lwjar;
+package lwjar.precompile;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -17,6 +17,7 @@ import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPrivateModifier;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import com.sun.org.apache.regexp.internal.RE;
+import lwjar.GlobalOption;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

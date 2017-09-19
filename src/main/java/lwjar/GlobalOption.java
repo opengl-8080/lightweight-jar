@@ -5,7 +5,7 @@ import java.nio.charset.Charset;
 public class GlobalOption {
     private static Charset charset;
     
-    static void setEncoding(Charset charset) {
+    public static void setEncoding(Charset charset) {
         GlobalOption.charset = charset;
     }
     
