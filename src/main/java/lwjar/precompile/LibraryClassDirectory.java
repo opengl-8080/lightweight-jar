@@ -18,7 +18,7 @@ public class LibraryClassDirectory {
         this.dir = dir;
     }
 
-    public void copyNoJavaAndClassFiles(Path toDir) throws IOException {
+    public void copyNoJavaAndClassFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
         if (this.dir == null) {
             return;
         }
@@ -33,11 +33,12 @@ public class LibraryClassDirectory {
 
                 // like, properties, spring.factories, etc...
                 Path relativePath = dir.relativize(file);
-                Path toPath = toDir.resolve(relativePath);
 
-                if (Files.exists(toPath)) {
+                if (preCompiledDirectory.has(relativePath)) {
                     return FileVisitResult.CONTINUE;
                 }
+                
+                Path toPath = preCompiledDirectory.resolve(relativePath);
 
                 if (Files.notExists(toPath.getParent())) {
                     Files.createDirectories(toPath.getParent());
@@ -52,7 +53,7 @@ public class LibraryClassDirectory {
         });
     }
 
-    public void copyClassFileOnly(Path toDir) throws IOException {
+    public void copyClassFileOnly(PreCompiledDirectory preCompiledDirectory) throws IOException {
         if (this.dir == null) {
             return;
         }
@@ -70,24 +71,22 @@ public class LibraryClassDirectory {
                 Path relativeParentDir = dir.relativize(file.getParent());
 
                 Path relativeSource = relativeParentDir.resolve(className + ".java");
-                Path expectedSource = toDir.resolve(relativeSource);
 
-                if (Files.exists(expectedSource)) {
+                if (preCompiledDirectory.has(relativeSource)) {
                     // ok (this class was succeeded to compile)
                     return FileVisitResult.CONTINUE;
                 }
 
                 Path relativeClass = dir.relativize(file);
-                Path expectedClass = toDir.resolve(relativeClass);
 
-                if (Files.exists(expectedClass)) {
+                if (preCompiledDirectory.has(relativeClass)) {
                     // ok (this class was failed to compile but class file exists.)
                     return FileVisitResult.CONTINUE;
                 }
 
                 // class file exists in original jar file, but source file (or compiled class file) doesn't exist.
                 Path relativeOrgClass = dir.relativize(file);
-                Path outPath = toDir.resolve(relativeOrgClass);
+                Path outPath = preCompiledDirectory.resolve(relativeOrgClass);
                 if (Files.notExists(outPath.getParent())) {
                     Files.createDirectories(outPath.getParent());
                 }
@@ -112,7 +111,7 @@ public class LibraryClassDirectory {
         return name.replace(".class", "");
     }
 
-    public void copyErrorClassFilesFromOrgToOut(Path toDir, Set<Path> errorSourceFiles) {
+    public void copyErrorClassFilesFromOrgToOut(PreCompiledDirectory preCompiledDirectory, Set<Path> errorSourceFiles) {
         if (this.dir == null) {
             throw new IllegalStateException("-c options is not set. please set classes directory path.");
         }
@@ -126,7 +125,7 @@ public class LibraryClassDirectory {
                         .filter(file -> file.getFileName().toString().startsWith(className))
                         .forEach(orgClassFile -> {
                             Path classFilePath = this.dir.relativize(orgClassFile);
-                            Path outClassFile = toDir.resolve(classFilePath);
+                            Path outClassFile = preCompiledDirectory.resolve(classFilePath);
 
                             try {
                                 Files.copy(orgClassFile, outClassFile, StandardCopyOption.REPLACE_EXISTING);

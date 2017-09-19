@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.*;
 
@@ -33,10 +32,10 @@ public class PreCompileCommand implements Command {
 
     private final LibrarySourceDirectory librarySourceDirectory;
     private final LibraryClassDirectory libraryClassDirectory;
+    private final PreCompiledDirectory preCompiledDirectory;
 
     private final JavaSourceCompressor javaSourceCompressor;
 
-    private final Path outSrcDir;
     private final Path compileErrorLog;
     
     private final Path workDir;
@@ -53,7 +52,7 @@ public class PreCompileCommand implements Command {
             outDir = Paths.get("./out");
         }
         
-        this.outSrcDir = outDir.resolve("src");
+        this.preCompiledDirectory = new PreCompiledDirectory(outDir.resolve("src"));
         this.compileErrorLog = outDir.resolve("compile-errors.log");
         
         this.workDir = outDir.resolve("work");
@@ -78,21 +77,17 @@ public class PreCompileCommand implements Command {
             result = this.compile();
         }
 
-        this.libraryClassDirectory.copyClassFileOnly(this.outSrcDir);
-        this.libraryClassDirectory.copyNoJavaAndClassFiles(this.outSrcDir);
+        this.libraryClassDirectory.copyClassFileOnly(this.preCompiledDirectory);
+        this.libraryClassDirectory.copyNoJavaAndClassFiles(this.preCompiledDirectory);
     }
 
     private void copyOrgToOut() throws IOException {
-        if (Files.exists(this.outSrcDir)) {
+        if (this.preCompiledDirectory.exists()) {
             return;
         }
 
         System.out.println("copy and compressing source files...");
-        this.librarySourceDirectory.copyTo(this.outSrcDir, this.javaSourceCompressor);
-    }
-
-    private boolean isJavaSource(Path file) {
-        return file.getFileName().toString().endsWith(".java");
+        this.librarySourceDirectory.copyTo(this.preCompiledDirectory, this.javaSourceCompressor);
     }
 
     private void createWorkDir() {
@@ -107,18 +102,18 @@ public class PreCompileCommand implements Command {
     }
 
     private void replaceErrorFiles(CompileResult result) throws IOException {
-        Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.outSrcDir);
+        Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.preCompiledDirectory);
 
         System.out.println("remove error source files...");
         errorSourceFiles.forEach(System.out::println);
 
-        this.libraryClassDirectory.copyErrorClassFilesFromOrgToOut(this.outSrcDir, errorSourceFiles);
+        this.libraryClassDirectory.copyErrorClassFilesFromOrgToOut(this.preCompiledDirectory, errorSourceFiles);
         this.removeErrorJavaFileFromOut(errorSourceFiles);
     }
 
     private void removeErrorJavaFileFromOut(Set<Path> errorSourceFiles) {
         errorSourceFiles.forEach(javaFile -> {
-            Path outJavaFile = this.outSrcDir.resolve(javaFile);
+            Path outJavaFile = this.preCompiledDirectory.resolve(javaFile);
             try {
                 Files.delete(outJavaFile);
             } catch (IOException e) {
@@ -130,7 +125,7 @@ public class PreCompileCommand implements Command {
     private CompileResult compile() throws IOException {
         this.recreateWorkDir();
 
-        List<String> sourceFiles = this.collectSourceFiles();
+        List<String> sourceFiles = this.preCompiledDirectory.collectSourceFiles();
         String[] args = this.buildJavacArgs(sourceFiles);
 
         ByteArrayOutputStream error = new ByteArrayOutputStream();
@@ -173,22 +168,14 @@ public class PreCompileCommand implements Command {
             throw new UncheckedIOException("failed remove work directory.", e);
         }
     }
-
-    private List<String> collectSourceFiles() throws IOException {
-        try (Stream<Path> s = Files.walk(this.outSrcDir)) {
-            return s.filter(this::isJavaSource)
-                    .map(file -> file.toAbsolutePath().toString())
-                    .collect(toList());
-        }
-    }
-
+    
     private String[] buildJavacArgs(List<String> sourceFiles) {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
         javacOptions.add(this.workDir.toString());
         javacOptions.add("-cp");
-        javacOptions.add(this.outSrcDir.toString());
+        javacOptions.add(this.preCompiledDirectory.stringPath());
         javacOptions.add("-encoding");
         javacOptions.add(this.encoding.toString());
         javacOptions.addAll(sourceFiles);
@@ -206,7 +193,7 @@ public class PreCompileCommand implements Command {
             this.errorMessage = errorMessage;
         }
 
-        private Set<Path> getErrorSourceFiles(Path outSrcDir) throws IOException {
+        private Set<Path> getErrorSourceFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
             System.out.println("extracting error source files...");
             
             Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
@@ -220,7 +207,7 @@ public class PreCompileCommand implements Command {
 
             return errorSrcPathSet.stream()
                     .map(Paths::get)
-                    .map(outSrcDir.toAbsolutePath()::relativize)
+                    .map(preCompiledDirectory::relativize)
                     .sorted()
                     .collect(toSet());
         }
