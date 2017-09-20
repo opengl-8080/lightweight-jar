@@ -19,6 +19,10 @@ public class PreCompiledDirectory {
     boolean has(Path relativePath) {
         return Files.exists(this.resolve(relativePath));
     }
+
+    ProcessingFile resolve(RelativePath relativePath) {
+        return new ProcessingFile(this.dir.resolve(relativePath.path()));
+    }
     
     Path resolve(Path relativePath) {
         return this.dir.resolve(relativePath);

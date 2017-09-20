@@ -38,6 +38,15 @@ public class JavaSourceCompressor {
         this.level = Objects.requireNonNull(compressLevel);
     }
 
+    public String compress(ProcessingFile file) {
+        try {
+            CompilationUnit cu = JavaParser.parse(file.path(), GlobalOption.getEncoding());
+            return this.removeLineSeparatorAndComments(cu);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public String compress(Path javaFilePath) {
         try {
             CompilationUnit cu = JavaParser.parse(javaFilePath, GlobalOption.getEncoding());

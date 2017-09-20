@@ -44,7 +44,7 @@ public class PreCompileCommand implements Command {
         this.encoding = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         
-        this.librarySourceDirectory = new LibrarySourceDirectory(orgSrcDir);
+        this.librarySourceDirectory = new LibrarySourceDirectory(new Directory(orgSrcDir));
         this.libraryClassDirectory = new LibraryClassDirectory(orgClassesDir);
         this.javaSourceCompressor = new JavaSourceCompressor(JavaSourceCompressor.CompressLevel.valueOf(compressLevel));
 
