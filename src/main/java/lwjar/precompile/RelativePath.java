@@ -13,7 +13,11 @@ public class RelativePath {
         }
     }
     
-    Path path() {
+    Path getPath() {
         return this.path;
+    }
+    
+    String getName() {
+        return this.path.getFileName().toString();
     }
 }

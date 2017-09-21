@@ -29,7 +29,7 @@ class LibraryClassDirectory {
 
             file.copyTo(outFile);
             
-            System.out.println(relativePath.path() + " is copied.");
+            System.out.println(relativePath.getPath() + " is copied.");
         });
     }
 
@@ -67,7 +67,7 @@ class LibraryClassDirectory {
             // class file exists in original jar file, but source file (or compiled class file) doesn't exist.
             file.copyTo(outClassFile);
 
-            System.out.println(relativeClassFilePath.path() + " is copied.");
+            System.out.println(relativeClassFilePath.getPath() + " is copied.");
         });
     }
 
@@ -76,15 +76,15 @@ class LibraryClassDirectory {
             throw new IllegalStateException("-c options is not set. please set classes directory path.");
         }
 
-        uncompilableJavaSources.forEach(relativeJavaSourcePath -> {
-            Directory classFileDir = this.directory.resolveDirectory(relativeJavaSourcePath.parentDir());
+        uncompilableJavaSources.forEach(uncompilableJavaSource -> {
+            Directory originalUncompilableClassFileDirectory = this.directory.resolveDirectory(uncompilableJavaSource.getParentDir());
 
-            String className = relativeJavaSourcePath.getClassName();
-            ProcessingFile originalClassFile = classFileDir.findFileStartsWith(className);
-            RelativePath relativeClassFilePath = this.directory.relativePath(originalClassFile);
-            ProcessingFile outClassFile = preCompiledDirectory.resolve(relativeClassFilePath);
+            String uncompilableClassName = uncompilableJavaSource.getClassName();
+            ProcessingFile originalUncompilableClassFile = originalUncompilableClassFileDirectory.findFileStartsWith(uncompilableClassName);
+            RelativePath relativeUncompilableClassFilePath = this.directory.relativePath(originalUncompilableClassFile);
+            ProcessingFile outFile = preCompiledDirectory.resolve(relativeUncompilableClassFilePath);
             
-            originalClassFile.copyTo(outClassFile);
+            originalUncompilableClassFile.copyTo(outFile);
         });
     }
 }

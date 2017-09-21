@@ -16,12 +16,10 @@ import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPrivateModifier;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
-import com.sun.org.apache.regexp.internal.RE;
 import lwjar.GlobalOption;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,16 +38,7 @@ public class JavaSourceCompressor {
 
     public String compress(ProcessingFile file) {
         try {
-            CompilationUnit cu = JavaParser.parse(file.path(), GlobalOption.getEncoding());
-            return this.removeLineSeparatorAndComments(cu);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public String compress(Path javaFilePath) {
-        try {
-            CompilationUnit cu = JavaParser.parse(javaFilePath, GlobalOption.getEncoding());
+            CompilationUnit cu = JavaParser.parse(file.getPath(), GlobalOption.getEncoding());
             return this.removeLineSeparatorAndComments(cu);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

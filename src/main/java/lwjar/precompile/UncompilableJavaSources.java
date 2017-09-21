@@ -4,13 +4,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 public class UncompilableJavaSources {
-    private final Set<RelativeJavaSourcePath> files;
+    private final Set<UncompilableJavaSource> files;
 
-    public UncompilableJavaSources(Set<RelativeJavaSourcePath> files) {
+    public UncompilableJavaSources(Set<UncompilableJavaSource> files) {
         this.files = files;
     }
     
-    void forEach(Consumer<RelativeJavaSourcePath> consumer) {
+    void forEach(Consumer<UncompilableJavaSource> consumer) {
         this.files.forEach(consumer);
     }
 }

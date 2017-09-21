@@ -13,7 +13,7 @@ class ClassFile {
     }
     
     String extractClassName() {
-        String name = this.file.name();
+        String name = this.file.getName();
 
         if (name.contains("$")) {
             // inner class

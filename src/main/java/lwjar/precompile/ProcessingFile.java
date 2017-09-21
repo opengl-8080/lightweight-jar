@@ -17,7 +17,7 @@ public class ProcessingFile {
     }
     
     ProcessingFile replaceFileName(String name) {
-        Path parent = this.parentDir();
+        Path parent = this.getParentDir();
         return new ProcessingFile(parent.resolve(name));
     }
     
@@ -48,39 +48,42 @@ public class ProcessingFile {
     }
     
     private void createParentDirectoriesIfNotExists() throws IOException {
-        if (Files.exists(this.parentDir())) {
+        if (Files.exists(this.getParentDir())) {
             return;
         }
-        Files.createDirectories(this.parentDir());
+        Files.createDirectories(this.getParentDir());
     }
     
-    private Path parentDir() {
+    private Path getParentDir() {
         return this.file.getParent();
     }
     
     boolean isJavaSource() {
-        return this.name().endsWith(".java")
-                && !this.name().equals("package-info.java");
+        return this.getName().endsWith(".java")
+                && !this.getName().equals("package-info.java");
     }
     
     boolean isManifestFile() {
-        return this.name().equals("MANIFEST.MF");
+        return this.getName().equals("MANIFEST.MF");
     }
     
-    String name() {
+    String getName() {
         return this.file.getFileName().toString();
     }
     
-    Path path() {
+    Path getPath() {
         return this.file;
     }
 
     boolean isClassFile() {
-        return this.name().endsWith(".class");
+        return this.getName().endsWith(".class");
     }
     
     boolean exists() {
         return Files.exists(this.file);
     }
     
+    String getAbsolutePathString() {
+        return this.file.toAbsolutePath().toString();
+    }
 }

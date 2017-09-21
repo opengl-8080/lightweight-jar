@@ -52,7 +52,7 @@ public class PreCompileCommand implements Command {
             outDir = Paths.get("./out");
         }
         
-        this.preCompiledDirectory = new PreCompiledDirectory(outDir.resolve("src"));
+        this.preCompiledDirectory = new PreCompiledDirectory(new Directory(outDir.resolve("src")));
         this.compileErrorLog = outDir.resolve("compile-errors.log");
         
         this.workDir = outDir.resolve("work");
@@ -112,8 +112,8 @@ public class PreCompileCommand implements Command {
     }
 
     private void removeErrorJavaFileFromOut(UncompilableJavaSources errorSourceFiles) {
-        errorSourceFiles.forEach(relativeJavaSourcePath -> {
-            ProcessingFile outJavaFile = this.preCompiledDirectory.resolve(relativeJavaSourcePath);
+        errorSourceFiles.forEach(uncompilableJavaSource -> {
+            ProcessingFile outJavaFile = this.preCompiledDirectory.resolve(uncompilableJavaSource);
             outJavaFile.delete();
         });
     }
@@ -121,7 +121,7 @@ public class PreCompileCommand implements Command {
     private CompileResult compile() throws IOException {
         this.recreateWorkDir();
 
-        List<String> sourceFiles = this.preCompiledDirectory.collectSourceFiles();
+        List<ProcessingFile> sourceFiles = this.preCompiledDirectory.collectSourceFiles();
         String[] args = this.buildJavacArgs(sourceFiles);
 
         ByteArrayOutputStream error = new ByteArrayOutputStream();
@@ -165,16 +165,16 @@ public class PreCompileCommand implements Command {
         }
     }
     
-    private String[] buildJavacArgs(List<String> sourceFiles) {
+    private String[] buildJavacArgs(List<ProcessingFile> sourceFiles) {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
         javacOptions.add(this.workDir.toString());
         javacOptions.add("-cp");
-        javacOptions.add(this.preCompiledDirectory.stringPath());
+        javacOptions.add(this.preCompiledDirectory.getStringPath());
         javacOptions.add("-encoding");
         javacOptions.add(this.encoding.toString());
-        javacOptions.addAll(sourceFiles);
+        javacOptions.addAll(sourceFiles.stream().map(ProcessingFile::getAbsolutePathString).collect(toList()));
 
         return javacOptions.toArray(new String[javacOptions.size()]);
     }
@@ -194,20 +194,15 @@ public class PreCompileCommand implements Command {
             
             Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
             Matcher matcher = pattern.matcher(this.errorMessage);
-            Set<String> errorSrcPathSet = new HashSet<>();
+            Set<UncompilableJavaSource> paths = new HashSet<>();
 
             while (matcher.find()) {
-                String sourcePath = matcher.group(1);
-                errorSrcPathSet.add(sourcePath);
+                Path absoluteSourcePath = Paths.get(matcher.group(1));
+                ProcessingFile uncompilableSource = new ProcessingFile(absoluteSourcePath);
+                RelativePath relativePath = preCompiledDirectory.relative(uncompilableSource);
+                UncompilableJavaSource uncompilableJavaSource = new UncompilableJavaSource(relativePath.getPath());
+                paths.add(uncompilableJavaSource);
             }
-
-            Set<RelativeJavaSourcePath> paths
-                    = errorSrcPathSet.stream()
-                        .map(Paths::get)
-                        .map(preCompiledDirectory::relativize)
-                        .sorted()
-                        .map(RelativeJavaSourcePath::new)
-                        .collect(toSet());
             
             return new UncompilableJavaSources(paths);
         }
