@@ -45,7 +45,7 @@ public class PreCompileCommand implements Command {
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         
         this.librarySourceDirectory = new LibrarySourceDirectory(new Directory(orgSrcDir));
-        this.libraryClassDirectory = new LibraryClassDirectory(orgClassesDir);
+        this.libraryClassDirectory = new LibraryClassDirectory(new Directory(orgClassesDir));
         this.javaSourceCompressor = new JavaSourceCompressor(JavaSourceCompressor.CompressLevel.valueOf(compressLevel));
 
         if (outDir == null) {
@@ -102,23 +102,19 @@ public class PreCompileCommand implements Command {
     }
 
     private void replaceErrorFiles(CompileResult result) throws IOException {
-        Set<Path> errorSourceFiles = result.getErrorSourceFiles(this.preCompiledDirectory);
+        UncompilableJavaSources errorSourceFiles = result.getErrorSourceFiles(this.preCompiledDirectory);
 
         System.out.println("remove error source files...");
-        errorSourceFiles.forEach(System.out::println);
+//        errorSourceFiles.forEach(System.out::println);
 
         this.libraryClassDirectory.copyErrorClassFilesFromOrgToOut(this.preCompiledDirectory, errorSourceFiles);
         this.removeErrorJavaFileFromOut(errorSourceFiles);
     }
 
-    private void removeErrorJavaFileFromOut(Set<Path> errorSourceFiles) {
-        errorSourceFiles.forEach(javaFile -> {
-            Path outJavaFile = this.preCompiledDirectory.resolve(javaFile);
-            try {
-                Files.delete(outJavaFile);
-            } catch (IOException e) {
-                throw new UncheckedIOException("failed to remove file.", e);
-            }
+    private void removeErrorJavaFileFromOut(UncompilableJavaSources errorSourceFiles) {
+        errorSourceFiles.forEach(relativeJavaSourcePath -> {
+            ProcessingFile outJavaFile = this.preCompiledDirectory.resolve(relativeJavaSourcePath);
+            outJavaFile.delete();
         });
     }
 
@@ -193,7 +189,7 @@ public class PreCompileCommand implements Command {
             this.errorMessage = errorMessage;
         }
 
-        private Set<Path> getErrorSourceFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
+        private UncompilableJavaSources getErrorSourceFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
             System.out.println("extracting error source files...");
             
             Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
@@ -205,11 +201,15 @@ public class PreCompileCommand implements Command {
                 errorSrcPathSet.add(sourcePath);
             }
 
-            return errorSrcPathSet.stream()
-                    .map(Paths::get)
-                    .map(preCompiledDirectory::relativize)
-                    .sorted()
-                    .collect(toSet());
+            Set<RelativeJavaSourcePath> paths
+                    = errorSrcPathSet.stream()
+                        .map(Paths::get)
+                        .map(preCompiledDirectory::relativize)
+                        .sorted()
+                        .map(RelativeJavaSourcePath::new)
+                        .collect(toSet());
+            
+            return new UncompilableJavaSources(paths);
         }
     }
 }

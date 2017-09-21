@@ -19,6 +19,10 @@ public class PreCompiledDirectory {
     boolean has(Path relativePath) {
         return Files.exists(this.resolve(relativePath));
     }
+    
+    ProcessingFile resolve(RelativeJavaSourcePath relativeJavaSourcePath) {
+        return new ProcessingFile(this.dir.resolve(relativeJavaSourcePath.path()));
+    }
 
     ProcessingFile resolve(RelativePath relativePath) {
         return new ProcessingFile(this.dir.resolve(relativePath.path()));
@@ -51,4 +55,5 @@ public class PreCompiledDirectory {
     String stringPath() {
         return this.dir.toString();
     }
+
 }

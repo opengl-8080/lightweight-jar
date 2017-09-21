@@ -16,6 +16,19 @@ public class ProcessingFile {
         this.file = Objects.requireNonNull(file);
     }
     
+    ProcessingFile replaceFileName(String name) {
+        Path parent = this.parentDir();
+        return new ProcessingFile(parent.resolve(name));
+    }
+    
+    void delete() {
+        try {
+            Files.delete(this.file);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+    
     void copyTo(ProcessingFile to) {
         try {
             to.createParentDirectoriesIfNotExists();
@@ -54,11 +67,20 @@ public class ProcessingFile {
         return this.name().equals("MANIFEST.MF");
     }
     
-    private String name() {
+    String name() {
         return this.file.getFileName().toString();
     }
     
     Path path() {
         return this.file;
     }
+
+    boolean isClassFile() {
+        return this.name().endsWith(".class");
+    }
+    
+    boolean exists() {
+        return Files.exists(this.file);
+    }
+    
 }
