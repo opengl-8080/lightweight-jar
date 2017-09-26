@@ -1,4 +1,6 @@
-package lwjar.precompile;
+package lwjar.primitive;
+
+import lwjar.precompile.FileVisitor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,14 +19,11 @@ import static java.util.stream.Collectors.*;
 public class Directory {
     private final Path dir;
 
-    Directory(Path dir) {
+    public Directory(Path dir) {
         this.dir = Objects.requireNonNull(dir);
-        if (!Files.isDirectory(dir)) {
-            throw new IllegalArgumentException("dir is not directory.");
-        }
     }
     
-    void walkFiles(FileVisitor visitor) {
+    public void walkFiles(FileVisitor visitor) {
         try {
             Files.walkFileTree(this.dir, new SimpleFileVisitor<Path>() {
                 @Override
@@ -38,8 +37,17 @@ public class Directory {
         }
     }
 
-    RelativePath relativePath(ProcessingFile file) {
-        return new RelativePath(this.dir.relativize(file.getPath()));
+    public RelativePath relativePath(ProcessingFile file) {
+        Path path = file.getPath();
+        Path dir = this.dir;
+        
+        if (dir.isAbsolute() && !path.isAbsolute()) {
+            path = path.toAbsolutePath();
+        } else if (!dir.isAbsolute() && path.isAbsolute()) {
+            dir = dir.toAbsolutePath();
+        }
+        
+        return new RelativePath(dir.relativize(path));
     }
 
     public Directory resolveDirectory(RelativePath relativePath) {
@@ -62,11 +70,11 @@ public class Directory {
         return new ProcessingFile(this.dir.resolve(relativePath.getPath()));
     }
     
-    boolean exists() {
+    public boolean exists() {
         return Files.exists(this.dir);
     }
     
-    String getStringPath() {
+    public String getStringPath() {
         return this.dir.toString();
     }
 

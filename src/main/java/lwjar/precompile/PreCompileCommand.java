@@ -3,6 +3,9 @@ package lwjar.precompile;
 import lwjar.Command;
 import lwjar.GlobalOption;
 import lwjar.TooManyCompileErrorException;
+import lwjar.primitive.Directory;
+import lwjar.primitive.ProcessingFile;
+import lwjar.primitive.RelativePath;
 
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
@@ -77,8 +80,8 @@ public class PreCompileCommand implements Command {
             result = this.compile();
         }
 
-        this.libraryClassDirectory.copyClassFileOnly(this.preCompiledDirectory);
-        this.libraryClassDirectory.copyNoJavaAndClassFiles(this.preCompiledDirectory);
+        this.libraryClassDirectory.copyClassFileThatOnlyExistsInBinaryJar(this.preCompiledDirectory);
+        this.libraryClassDirectory.copyResourceFilesTo(this.preCompiledDirectory);
     }
 
     private void copyOrgToOut() throws IOException {
@@ -107,7 +110,7 @@ public class PreCompileCommand implements Command {
         System.out.println("remove error source files...");
 //        errorSourceFiles.forEach(System.out::println);
 
-        this.libraryClassDirectory.copyErrorClassFilesFromOrgToOut(this.preCompiledDirectory, errorSourceFiles);
+        this.libraryClassDirectory.copyErrorClassFiles(this.preCompiledDirectory, errorSourceFiles);
         this.removeErrorJavaFileFromOut(errorSourceFiles);
     }
 

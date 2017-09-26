@@ -1,4 +1,4 @@
-package lwjar.precompile;
+package lwjar.primitive;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,21 +15,21 @@ public class ProcessingFile {
     public ProcessingFile(Path file) {
         this.file = Objects.requireNonNull(file);
     }
-    
-    ProcessingFile replaceFileName(String name) {
+
+    public ProcessingFile replaceFileName(String name) {
         Path parent = this.getParentDir();
         return new ProcessingFile(parent.resolve(name));
     }
-    
-    void delete() {
+
+    public void delete() {
         try {
             Files.delete(this.file);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
-    
-    void copyTo(ProcessingFile to) {
+
+    public void copyTo(ProcessingFile to) {
         try {
             to.createParentDirectoriesIfNotExists();
             Files.copy(this.file, to.file, StandardCopyOption.REPLACE_EXISTING);
@@ -37,8 +37,8 @@ public class ProcessingFile {
             throw new UncheckedIOException(e);
         }
     }
-    
-    void write(String text, Charset charset) {
+
+    public void write(String text, Charset charset) {
         try {
             this.createParentDirectoriesIfNotExists();
             Files.write(this.file, text.getBytes(charset), StandardOpenOption.CREATE);
@@ -58,32 +58,32 @@ public class ProcessingFile {
         return this.file.getParent();
     }
     
-    boolean isJavaSource() {
+    public boolean isJavaSource() {
         return this.getName().endsWith(".java")
                 && !this.getName().equals("package-info.java");
     }
-    
-    boolean isManifestFile() {
+
+    public boolean isManifestFile() {
         return this.getName().equals("MANIFEST.MF");
     }
-    
-    String getName() {
+
+    public String getName() {
         return this.file.getFileName().toString();
     }
     
-    Path getPath() {
+    public Path getPath() {
         return this.file;
     }
 
-    boolean isClassFile() {
+    public boolean isClassFile() {
         return this.getName().endsWith(".class");
     }
-    
-    boolean exists() {
+
+    public boolean exists() {
         return Files.exists(this.file);
     }
-    
-    String getAbsolutePathString() {
+
+    public String getAbsolutePathString() {
         return this.file.toAbsolutePath().toString();
     }
 }

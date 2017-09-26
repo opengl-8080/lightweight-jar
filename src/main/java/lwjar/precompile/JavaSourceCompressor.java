@@ -17,6 +17,7 @@ import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPrivateModifier;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.PrettyPrinterConfiguration;
 import lwjar.GlobalOption;
+import lwjar.primitive.ProcessingFile;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

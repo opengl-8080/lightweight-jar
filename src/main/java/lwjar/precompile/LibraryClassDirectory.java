@@ -1,5 +1,10 @@
 package lwjar.precompile;
 
+import lwjar.primitive.ClassFile;
+import lwjar.primitive.Directory;
+import lwjar.primitive.ProcessingFile;
+import lwjar.primitive.RelativePath;
+
 import java.io.IOException;
 
 class LibraryClassDirectory {
@@ -9,7 +14,7 @@ class LibraryClassDirectory {
         this.directory = directory;
     }
 
-    void copyNoJavaAndClassFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
+    void copyResourceFilesTo(PreCompiledDirectory preCompiledDirectory) throws IOException {
         if (this.directory == null) {
             return;
         }
@@ -33,7 +38,7 @@ class LibraryClassDirectory {
         });
     }
 
-    void copyClassFileOnly(PreCompiledDirectory preCompiledDirectory) throws IOException {
+    void copyClassFileThatOnlyExistsInBinaryJar(PreCompiledDirectory preCompiledDirectory) throws IOException {
         if (this.directory == null) {
             return;
         }
@@ -45,33 +50,34 @@ class LibraryClassDirectory {
                 return;
             }
 
-            String className = new ClassFile(file).extractClassName();
-            ProcessingFile javaSourceFile = file.replaceFileName(className);
-            RelativePath relativeJavaSourceFile = this.directory.relativePath(javaSourceFile);
-
-            ProcessingFile preCompiledJavaSourceFile = preCompiledDirectory.resolve(relativeJavaSourceFile);
-
-            if (preCompiledJavaSourceFile.exists()) {
-                // ok (this class was succeeded to compile)
+            RelativePath relativeJavaSourcePath = this.toRelativeJavaSourcePath(file);
+            if (preCompiledDirectory.has(relativeJavaSourcePath)) {
+                // precompile was successful.
                 return;
             }
 
             RelativePath relativeClassFilePath = this.directory.relativePath(file);
-            ProcessingFile outClassFile = preCompiledDirectory.resolve(relativeClassFilePath);
-
-            if (outClassFile.exists()) {
-                // ok (this class was failed to compile but class file exists.)
+            if (preCompiledDirectory.has(relativeClassFilePath)) {
+                // precompile was failed, but java source exists in source jar.
                 return;
             }
 
+            ProcessingFile preCompiledClassFile = preCompiledDirectory.resolve(relativeClassFilePath);
+
             // class file exists in original jar file, but source file (or compiled class file) doesn't exist.
-            file.copyTo(outClassFile);
+            file.copyTo(preCompiledClassFile);
 
             System.out.println(relativeClassFilePath.getPath() + " is copied.");
         });
     }
+    
+    private RelativePath toRelativeJavaSourcePath(ProcessingFile classFile) {
+        String className = new ClassFile(classFile).extractClassName();
+        ProcessingFile expectedJavaSourceFile = classFile.replaceFileName(className + ".java");
+        return this.directory.relativePath(expectedJavaSourceFile);
+    }
 
-    void copyErrorClassFilesFromOrgToOut(PreCompiledDirectory preCompiledDirectory, UncompilableJavaSources uncompilableJavaSources) {
+    void copyErrorClassFiles(PreCompiledDirectory preCompiledDirectory, UncompilableJavaSources uncompilableJavaSources) {
         if (this.directory == null) {
             throw new IllegalStateException("-c options is not set. please set classes directory path.");
         }

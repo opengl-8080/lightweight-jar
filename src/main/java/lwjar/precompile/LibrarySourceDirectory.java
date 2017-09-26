@@ -1,16 +1,19 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
+import lwjar.primitive.Directory;
+import lwjar.primitive.ProcessingFile;
+import lwjar.primitive.RelativePath;
 
-public class LibrarySourceDirectory {
+class LibrarySourceDirectory {
     
     private final Directory directory;
 
-    public LibrarySourceDirectory(Directory directory) {
+    LibrarySourceDirectory(Directory directory) {
         this.directory = directory;
     }
 
-    public void copyTo(PreCompiledDirectory preCompiledDirectory, JavaSourceCompressor javaSourceCompressor) {
+    void copyTo(PreCompiledDirectory preCompiledDirectory, JavaSourceCompressor javaSourceCompressor) {
         
         this.directory.walkFiles(file -> {
             RelativePath relativePath = this.directory.relativePath(file);

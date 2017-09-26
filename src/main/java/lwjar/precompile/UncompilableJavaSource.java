@@ -1,17 +1,19 @@
 package lwjar.precompile;
 
+import lwjar.primitive.RelativePath;
+
 import java.nio.file.Path;
 
-public class UncompilableJavaSource extends RelativePath {
-    public UncompilableJavaSource(Path relativePath) {
+class UncompilableJavaSource extends RelativePath {
+    UncompilableJavaSource(Path relativePath) {
         super(relativePath);
     }
 
-    public String getClassName() {
+    String getClassName() {
         return this.getName().replaceAll("\\.java", "");
     }
 
-    public RelativePath getParentDir() {
+    RelativePath getParentDir() {
         return new RelativePath(this.getPath().getParent());
     }
 }

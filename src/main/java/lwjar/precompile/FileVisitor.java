@@ -1,5 +1,7 @@
 package lwjar.precompile;
 
+import lwjar.primitive.ProcessingFile;
+
 import java.io.IOException;
 
 @FunctionalInterface
