@@ -11,10 +11,8 @@ import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +32,7 @@ public class PreCompileCommand implements Command {
 
     private final JavaSourceCompressor javaSourceCompressor;
 
-    private final Path compileErrorLog;
+    private final ErrorLogFile compileErrorLog;
     
     private final CompileWorkDirectory workDir;
 
@@ -51,7 +49,7 @@ public class PreCompileCommand implements Command {
         }
         
         this.preCompiledDirectory = new PreCompiledDirectory(new Directory(outDir.resolve("src")));
-        this.compileErrorLog = outDir.resolve("compile-errors.log");
+        this.compileErrorLog = new ErrorLogFile(new Directory(outDir));
         
         this.workDir = new CompileWorkDirectory(new Directory(outDir.resolve("work")));
     }
@@ -119,9 +117,7 @@ public class PreCompileCommand implements Command {
 
         String errorMessage = error.toString(Charset.defaultCharset().toString());
 
-        if (!errorMessage.isEmpty()) {
-            Files.write(this.compileErrorLog, error.toByteArray(), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-        }
+        this.compileErrorLog.append(errorMessage);
 
         return new CompileResult(resultCode != 0, errorMessage);
     }
