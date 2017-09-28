@@ -87,4 +87,36 @@ public class Directory {
             throw new UncheckedIOException(e);
         }
     }
+
+    public void create() {
+        try {
+            Files.createDirectories(this.dir);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void remove() {
+        try {
+            Files.walkFileTree(this.dir, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (Files.exists(file)) {
+                        Files.delete(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    if (Files.exists(dir)) {
+                        Files.delete(dir);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed remove work directory.", e);
+        }
+    }
 }

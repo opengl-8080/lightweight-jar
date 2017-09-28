@@ -10,16 +10,11 @@ import lwjar.primitive.RelativePath;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +36,7 @@ public class PreCompileCommand implements Command {
 
     private final Path compileErrorLog;
     
-    private final Path workDir;
+    private final CompileWorkDirectory workDir;
 
     public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir, Integer compressLevel) {
         this.encoding = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
@@ -58,13 +53,13 @@ public class PreCompileCommand implements Command {
         this.preCompiledDirectory = new PreCompiledDirectory(new Directory(outDir.resolve("src")));
         this.compileErrorLog = outDir.resolve("compile-errors.log");
         
-        this.workDir = outDir.resolve("work");
+        this.workDir = new CompileWorkDirectory(new Directory(outDir.resolve("work")));
     }
 
     @Override
     public void execute() throws IOException {
         this.copyOrgToOut();
-        this.createWorkDir();
+        this.workDir.create();
 
         int cnt = 0;
         CompileResult result = this.compile();
@@ -93,17 +88,6 @@ public class PreCompileCommand implements Command {
         this.librarySourceDirectory.copyTo(this.preCompiledDirectory, this.javaSourceCompressor);
     }
 
-    private void createWorkDir() {
-        try {
-            Files.createDirectories(this.workDir);
-        } catch (AccessDeniedException e) {
-            // skip this. because this error is sometimes occurred without any problems. (I don't understand well...)
-            System.err.println("Warning: " + e.getClass() + " : " + e.getMessage());
-        } catch (IOException e) {
-            throw new UncheckedIOException("failed to create work directory.", e);
-        }
-    }
-
     private void replaceErrorFiles(CompileResult result) throws IOException {
         UncompilableJavaSources errorSourceFiles = result.getErrorSourceFiles(this.preCompiledDirectory);
 
@@ -122,7 +106,7 @@ public class PreCompileCommand implements Command {
     }
 
     private CompileResult compile() throws IOException {
-        this.recreateWorkDir();
+        this.workDir.recreate();
 
         List<ProcessingFile> sourceFiles = this.preCompiledDirectory.collectSourceFiles();
         String[] args = this.buildJavacArgs(sourceFiles);
@@ -142,37 +126,11 @@ public class PreCompileCommand implements Command {
         return new CompileResult(resultCode != 0, errorMessage);
     }
     
-    private void recreateWorkDir() throws IOException {
-        System.out.println("recreate work directory...");
-        this.removeWorkDir();
-        this.createWorkDir();
-    }
-    
-    private void removeWorkDir() {
-        try {
-            Files.walkFileTree(this.workDir, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
-                    return FileVisitResult.CONTINUE;
-                }
-    
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    Files.delete(dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException("failed remove work directory.", e);
-        }
-    }
-    
     private String[] buildJavacArgs(List<ProcessingFile> sourceFiles) {
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
-        javacOptions.add(this.workDir.toString());
+        javacOptions.add(this.workDir.getStringPath());
         javacOptions.add("-cp");
         javacOptions.add(this.preCompiledDirectory.getStringPath());
         javacOptions.add("-encoding");
