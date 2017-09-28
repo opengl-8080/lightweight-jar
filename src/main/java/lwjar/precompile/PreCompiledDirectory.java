@@ -32,11 +32,11 @@ class PreCompiledDirectory {
         return this.directory.relativePath(file);
     }
 
-    List<ProcessingFile> collectSourceFiles() throws IOException {
-        return this.directory.collectFiles(ProcessingFile::isJavaSource);
+    JavaSourceFiles collectSourceFiles() throws IOException {
+        return new JavaSourceFiles(this.directory.collectFiles(ProcessingFile::isJavaSource));
     }
-
-    String getStringPath() {
-        return this.directory.getStringPath();
+    
+    ClassPath asClassPath() {
+        return new ClassPath(this.directory);
     }
 }

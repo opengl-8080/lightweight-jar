@@ -4,18 +4,11 @@ import lwjar.primitive.Directory;
 
 import java.util.Objects;
 
-class CompileWorkDirectory {
+class ClassPath {
     private final Directory directory;
 
-    CompileWorkDirectory(Directory directory) {
+    ClassPath(Directory directory) {
         this.directory = Objects.requireNonNull(directory);
-    }
-
-    void recreate() {
-        if (this.directory.exists()) {
-            this.directory.remove();
-        }
-        this.directory.create();
     }
     
     String getStringPath() {
