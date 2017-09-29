@@ -11,10 +11,10 @@ import java.util.Objects;
 class PreCompiledDirectory {
     private final Directory directory;
 
-    PreCompiledDirectory(Directory directory) {
-        this.directory = Objects.requireNonNull(directory);
+    PreCompiledDirectory(OutputDirectory outputDirectory) {
+        this.directory = outputDirectory.resolve("src");
     }
-    
+
     boolean has(RelativePath relativePath) {
         ProcessingFile file = this.directory.resolve(relativePath);
         return file.exists();

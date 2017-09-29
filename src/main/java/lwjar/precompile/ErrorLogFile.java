@@ -12,11 +12,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 class ErrorLogFile {
-    private static final RelativePath FILE_NAME = new RelativePath(Paths.get("compile-errors.log"));
+    private final static String FILE_NAME = "compile-errors.log";
     private final Path file;
 
-    ErrorLogFile(Directory directory) {
-        this.file = directory.resolve(FILE_NAME).getPath();
+    ErrorLogFile(OutputDirectory outputDirectory) {
+        this.file = outputDirectory.resolve(FILE_NAME).getPath();
     }
     
     void append(String text) {

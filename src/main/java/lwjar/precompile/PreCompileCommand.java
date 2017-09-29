@@ -9,7 +9,6 @@ import lwjar.primitive.ProcessingFile;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class PreCompileCommand implements Command {
 
@@ -28,15 +27,12 @@ public class PreCompileCommand implements Command {
         this.libraryClassDirectory = new LibraryClassDirectory(new Directory(orgClassesDir));
         this.javaSourceCompressor = new JavaSourceCompressor(JavaSourceCompressor.CompressLevel.valueOf(compressLevel));
 
-        if (outDir == null) {
-            outDir = Paths.get("./out");
-        }
-        
-        this.preCompiledDirectory = new PreCompiledDirectory(new Directory(outDir.resolve("src")));
-        
-        ErrorLogFile compileErrorLog = new ErrorLogFile(new Directory(outDir));
-        Directory outputDir = new Directory(outDir);
-        this.preCompiler = new PreCompiler(compileErrorLog, outputDir);
+        OutputDirectory outputDirectory = new OutputDirectory(outDir);
+
+        this.preCompiledDirectory = new PreCompiledDirectory(outputDirectory);
+
+        ErrorLogFile compileErrorLog = new ErrorLogFile(outputDirectory);
+        this.preCompiler = new PreCompiler(compileErrorLog, outputDirectory);
     }
 
     @Override

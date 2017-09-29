@@ -119,4 +119,8 @@ public class Directory {
             throw new UncheckedIOException("failed remove work directory.", e);
         }
     }
+
+    public Path getPath() {
+        return this.dir;
+    }
 }

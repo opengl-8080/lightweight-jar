@@ -16,9 +16,9 @@ class PreCompiler {
     private final CompileWorkDirectory workDir;
     private final ErrorLogFile compileErrorLog;
 
-    PreCompiler(ErrorLogFile compileErrorLog, Directory outputDir) {
+    PreCompiler(ErrorLogFile compileErrorLog, OutputDirectory outputDirectory) {
         this.compileErrorLog = compileErrorLog;
-        this.workDir = new CompileWorkDirectory(outputDir.resolveDirectory(new RelativePath(Paths.get("work"))));
+        this.workDir = new CompileWorkDirectory(outputDirectory.resolve("work"));
     }
 
     CompileResult compile(JavaSourceFiles javaSourceFiles, ClassPath classPath) throws IOException {
