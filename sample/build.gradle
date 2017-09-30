@@ -21,6 +21,7 @@ repositories {
 dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
     runtime 'org.springframework.boot:spring-boot-loader'
+    runtime 'javax:javaee-api:7.0'
 }
 
 import groovy.io.FileType
