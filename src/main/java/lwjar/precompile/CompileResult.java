@@ -30,8 +30,7 @@ class CompileResult {
         while (matcher.find()) {
             Path absoluteSourcePath = Paths.get(matcher.group(1));
             ProcessingFile uncompilableSource = new ProcessingFile(absoluteSourcePath);
-            RelativePath relativePath = preCompiledDirectory.relative(uncompilableSource);
-            UncompilableJavaSource uncompilableJavaSource = new UncompilableJavaSource(relativePath.getPath());
+            UncompilableJavaSource uncompilableJavaSource = new UncompilableJavaSource(preCompiledDirectory, uncompilableSource);
             paths.add(uncompilableJavaSource);
         }
 

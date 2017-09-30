@@ -2,14 +2,17 @@ package lwjar.precompile;
 
 import lwjar.primitive.ProcessingFile;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class JavaSourceFiles {
-    private List<ProcessingFile> sourceFiles;
+    private Set<ProcessingFile> sourceFiles;
 
-    JavaSourceFiles(List<ProcessingFile> sourceFiles) {
-        this.sourceFiles = sourceFiles;
+    JavaSourceFiles(Collection<ProcessingFile> sourceFiles) {
+        this.sourceFiles = new HashSet<>(sourceFiles);
     }
 
     List<String> toStringList() {

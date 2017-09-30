@@ -33,11 +33,11 @@ import java.util.Set;
 public class JavaSourceCompressor {
     private final CompressLevel level;
 
-    public JavaSourceCompressor(CompressLevel compressLevel) {
+    JavaSourceCompressor(CompressLevel compressLevel) {
         this.level = Objects.requireNonNull(compressLevel);
     }
 
-    public String compress(ProcessingFile file) {
+    String compress(ProcessingFile file) {
         try {
             CompilationUnit cu = JavaParser.parse(file.getPath(), GlobalOption.getEncoding());
             return this.removeLineSeparatorAndComments(cu);
@@ -164,8 +164,7 @@ public class JavaSourceCompressor {
         REMOVE_COMMENTS(1),
         REMOVE_LINE_SEPARATOR(2),
         REMOVE_ANNOTATIONS(3),
-        REMOVE_PRIVATE_MODIFIERS(4),
-        RENAME_LOCAL_VARIABLES(5),
+        REMOVE_PRIVATE_MODIFIERS(4)
         ;
         
         private final int level;
@@ -176,12 +175,11 @@ public class JavaSourceCompressor {
             map.put(2, REMOVE_LINE_SEPARATOR);
             map.put(3, REMOVE_ANNOTATIONS);
             map.put(4, REMOVE_PRIVATE_MODIFIERS);
-            map.put(5, RENAME_LOCAL_VARIABLES);
             mapping = Collections.unmodifiableMap(map);
         }
         
         static CompressLevel valueOf(Integer level) {
-            return mapping.getOrDefault(level, RENAME_LOCAL_VARIABLES);
+            return mapping.getOrDefault(level, REMOVE_PRIVATE_MODIFIERS);
         }
 
         CompressLevel(int level) {

@@ -13,4 +13,8 @@ class UncompilableJavaSources {
     void forEach(Consumer<UncompilableJavaSource> consumer) {
         this.files.forEach(consumer);
     }
+
+    void removeFiles() {
+        this.files.forEach(UncompilableJavaSource::delete);
+    }
 }

@@ -86,4 +86,19 @@ public class ProcessingFile {
     public String getAbsolutePathString() {
         return this.file.toAbsolutePath().toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ProcessingFile that = (ProcessingFile) o;
+
+        return file.equals(that.file);
+    }
+
+    @Override
+    public int hashCode() {
+        return file.hashCode();
+    }
 }

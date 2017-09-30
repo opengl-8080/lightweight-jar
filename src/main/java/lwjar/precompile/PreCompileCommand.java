@@ -4,7 +4,6 @@ import lwjar.Command;
 import lwjar.GlobalOption;
 import lwjar.TooManyCompileErrorException;
 import lwjar.primitive.Directory;
-import lwjar.primitive.ProcessingFile;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -74,13 +73,6 @@ public class PreCompileCommand implements Command {
 //        errorSourceFiles.forEach(System.out::println);
 
         this.libraryClassDirectory.copyErrorClassFiles(this.preCompiledDirectory, errorSourceFiles);
-        this.removeErrorJavaFileFromOut(errorSourceFiles);
-    }
-
-    private void removeErrorJavaFileFromOut(UncompilableJavaSources errorSourceFiles) {
-        errorSourceFiles.forEach(uncompilableJavaSource -> {
-            ProcessingFile outJavaFile = this.preCompiledDirectory.resolve(uncompilableJavaSource);
-            outJavaFile.delete();
-        });
+        errorSourceFiles.removeFiles();
     }
 }

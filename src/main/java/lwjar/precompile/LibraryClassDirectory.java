@@ -83,14 +83,23 @@ class LibraryClassDirectory {
         }
 
         uncompilableJavaSources.forEach(uncompilableJavaSource -> {
-            Directory originalUncompilableClassFileDirectory = this.directory.resolveDirectory(uncompilableJavaSource.getParentDir());
+            ProcessingFile originalClassFile = this.findClassFile(uncompilableJavaSource);
+            ProcessingFile outClassFile = this.resolveOutClassFile(preCompiledDirectory, originalClassFile);
 
-            String uncompilableClassName = uncompilableJavaSource.getClassName();
-            ProcessingFile originalUncompilableClassFile = originalUncompilableClassFileDirectory.findFileStartsWith(uncompilableClassName);
-            RelativePath relativeUncompilableClassFilePath = this.directory.relativePath(originalUncompilableClassFile);
-            ProcessingFile outFile = preCompiledDirectory.resolve(relativeUncompilableClassFilePath);
-            
-            originalUncompilableClassFile.copyTo(outFile);
+            originalClassFile.copyTo(outClassFile);
         });
+    }
+
+    private ProcessingFile findClassFile(UncompilableJavaSource javaSource) {
+        RelativePath packagePath = javaSource.getPackagePath();
+        Directory packageDirectory = this.directory.resolveDirectory(packagePath);
+
+        String className = javaSource.getClassName();
+        return packageDirectory.findFileStartsWith(className);
+    }
+
+    private ProcessingFile resolveOutClassFile(PreCompiledDirectory preCompiledDirectory, ProcessingFile originalClassFile) {
+        RelativePath relativeUncompilableClassFilePath = this.directory.relativePath(originalClassFile);
+        return preCompiledDirectory.resolve(relativeUncompilableClassFilePath);
     }
 }
