@@ -1,33 +1,30 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
-import lwjar.primitive.Directory;
+import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 class ErrorLogFile {
-    private final static String FILE_NAME = "compile-errors.log";
-    private final Path file;
-
+    private static int n = 1;
+    private final static String FILE_NAME = "compile-errors-%d.log";
+    private final OutputDirectory outputDirectory;
+    
     ErrorLogFile(OutputDirectory outputDirectory) {
-        this.file = outputDirectory.resolve(FILE_NAME).getPath();
+        this.outputDirectory = Objects.requireNonNull(outputDirectory);
     }
     
-    void append(String text) {
+    synchronized void write(String text) {
         if (text.isEmpty()) {
             return;
         }
 
-        try {
-            Files.write(this.file, text.getBytes(GlobalOption.getEncoding()), StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        String fileName = String.format(FILE_NAME, n);
+        ProcessingFile file = this.outputDirectory.resolveFile(new RelativePath(Paths.get(fileName)));
+        file.write(text, GlobalOption.getEncoding());
+        
+        n++;
     }
 }
