@@ -20,8 +20,6 @@ class CompileResult {
     }
 
     UncompilableJavaSources getErrorSourceFiles(PreCompiledDirectory preCompiledDirectory) throws IOException {
-        System.out.println("extracting error source files...");
-
         Pattern pattern = Pattern.compile("^([^ \\r\\n]+\\.java):\\d+:", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(this.errorMessage);
         Set<UncompilableJavaSource> paths = new HashSet<>();
