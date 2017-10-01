@@ -66,6 +66,11 @@ public class ProcessingFile {
     public boolean isManifestFile() {
         return this.getName().equals("MANIFEST.MF");
     }
+    
+    public boolean isPackageInfo() {
+        return this.getName().equals("package.html")
+                || this.getName().equals("package-info.java");
+    }
 
     public String getName() {
         return this.file.getFileName().toString();

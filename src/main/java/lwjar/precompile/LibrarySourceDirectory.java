@@ -22,7 +22,7 @@ class LibrarySourceDirectory {
             if (file.isJavaSource()) {
                 String compressedSource = javaSourceCompressor.compress(file);
                 outFile.write(compressedSource, GlobalOption.getEncoding());
-            } else if (!file.isManifestFile()) {
+            } else if (!file.isManifestFile() && !file.isPackageInfo()) {
                 file.copyTo(outFile);
             }
         });
