@@ -30,8 +30,7 @@ public class PreCompileCommand implements Command {
 
         this.preCompiledDirectory = new PreCompiledDirectory(outputDirectory);
 
-        ErrorLogFile compileErrorLog = new ErrorLogFile(outputDirectory);
-        this.preCompiler = new PreCompiler(compileErrorLog, outputDirectory);
+        this.preCompiler = new PreCompiler(outputDirectory, this.preCompiledDirectory);
     }
 
     @Override
@@ -39,8 +38,7 @@ public class PreCompileCommand implements Command {
         this.copyOrgToOut();
 
         int cnt = 0;
-        ClassPath classPath = this.preCompiledDirectory.asClassPath();
-        CompileResult result = this.preCompiler.compile(this.preCompiledDirectory.collectSourceFiles(), classPath);
+        CompileResult result = this.preCompiler.compile();
 
         while (result.isError()) {
             this.replaceErrorFiles(result);
@@ -50,7 +48,7 @@ public class PreCompileCommand implements Command {
                 throw new TooManyCompileErrorException("too many compile errors are occurred.");
             }
 
-            result = this.preCompiler.compile(this.preCompiledDirectory.collectSourceFiles(), classPath);
+            result = this.preCompiler.compile();
         }
 
         this.libraryClassDirectory.copyClassFileThatOnlyExistsInBinaryJar(this.preCompiledDirectory);

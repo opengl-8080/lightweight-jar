@@ -30,7 +30,7 @@ class PreCompiledDirectory {
         return this.directory.relativePath(file);
     }
 
-    JavaSourceFiles collectSourceFiles() throws IOException {
+    JavaSourceFiles collectSourceFiles() {
         return new JavaSourceFiles(this.directory.collectFiles(ProcessingFile::isJavaSource));
     }
     

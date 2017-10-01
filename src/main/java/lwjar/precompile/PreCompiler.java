@@ -10,18 +10,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 class PreCompiler {
+    private final PreCompiledDirectory preCompiledDirectory;
     private final CompileWorkDirectory workDir;
     private final ErrorLogFile compileErrorLog;
 
-    PreCompiler(ErrorLogFile compileErrorLog, OutputDirectory outputDirectory) {
-        this.compileErrorLog = compileErrorLog;
+    PreCompiler(OutputDirectory outputDirectory, PreCompiledDirectory preCompiledDirectory) {
+        this.compileErrorLog = new ErrorLogFile(outputDirectory);
         this.workDir = new CompileWorkDirectory(outputDirectory.resolveDirectory("work"));
+        this.preCompiledDirectory = preCompiledDirectory;
     }
 
-    CompileResult compile(JavaSourceFiles javaSourceFiles, ClassPath classPath) throws IOException {
+    CompileResult compile() throws IOException {
         this.workDir.recreate();
 
-        String[] args = this.buildJavacArgs(javaSourceFiles, classPath);
+        String[] args = this.buildJavacArgs();
 
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
@@ -36,7 +38,10 @@ class PreCompiler {
         return new CompileResult(resultCode != 0, errorMessage);
     }
 
-    private String[] buildJavacArgs(JavaSourceFiles javaSourceFiles, ClassPath classPath) {
+    private String[] buildJavacArgs() {
+        JavaSourceFiles javaSourceFiles = this.preCompiledDirectory.collectSourceFiles();
+        ClassPath classPath = this.preCompiledDirectory.asClassPath();
+
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
