@@ -1,7 +1,6 @@
 package lwjar.precompile;
 
 import lwjar.primitive.ProcessingFile;
-import lwjar.primitive.RelativePath;
 
 import java.io.IOException;
 import java.nio.file.Path;

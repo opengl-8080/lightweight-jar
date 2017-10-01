@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 class ErrorLogFile {
-    private static int n = 1;
     private final static String FILE_NAME = "compile-errors-%d.log";
     private final OutputDirectory outputDirectory;
     
@@ -16,15 +15,13 @@ class ErrorLogFile {
         this.outputDirectory = Objects.requireNonNull(outputDirectory);
     }
     
-    synchronized void write(String text) {
+    void write(int compileCounter, String text) {
         if (text.isEmpty()) {
             return;
         }
 
-        String fileName = String.format(FILE_NAME, n);
+        String fileName = String.format(FILE_NAME, compileCounter);
         ProcessingFile file = this.outputDirectory.resolveFile(new RelativePath(Paths.get(fileName)));
         file.write(text, GlobalOption.getEncoding());
-        
-        n++;
     }
 }

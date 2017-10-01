@@ -67,9 +67,6 @@ public class PreCompileCommand implements Command {
     private void replaceErrorFiles(CompileResult result) throws IOException {
         UncompilableJavaSources errorSourceFiles = result.getErrorSourceFiles(this.preCompiledDirectory);
 
-        System.out.println("remove error source files...");
-//        errorSourceFiles.forEach(System.out::println);
-
         this.libraryClassDirectory.copyErrorClassFiles(this.preCompiledDirectory, errorSourceFiles);
         errorSourceFiles.removeFiles();
     }

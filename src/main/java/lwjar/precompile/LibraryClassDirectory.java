@@ -34,8 +34,6 @@ class LibraryClassDirectory {
             }
 
             file.copyTo(outFile);
-            
-            System.out.println(relativePath.getPath() + " is copied.");
         });
     }
 
@@ -43,8 +41,6 @@ class LibraryClassDirectory {
         if (this.directory == null) {
             return;
         }
-
-        System.out.println("coping class files only binary jar files...");
 
         this.directory.walkFiles(file -> {
             if (!file.isClassFile()) {
@@ -67,8 +63,6 @@ class LibraryClassDirectory {
 
             // class file exists in original jar file, but source file (or compiled class file) doesn't exist.
             file.copyTo(preCompiledClassFile);
-
-            System.out.println(relativeClassFilePath.getPath() + " is copied.");
         });
     }
     

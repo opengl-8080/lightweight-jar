@@ -4,8 +4,6 @@ import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-import java.io.IOException;
-
 class PreCompiledDirectory {
     private final Directory directory;
 
@@ -34,7 +32,7 @@ class PreCompiledDirectory {
         return new JavaSourceFiles(this.directory.collectFiles(ProcessingFile::isJavaSource));
     }
     
-    ClassPath asClassPath() {
-        return new ClassPath(this.directory);
+    String getStringPath() {
+        return this.directory.getStringPath();
     }
 }

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 class PreCompiler {
+    private static int count = 1;
     private final PreCompiledDirectory preCompiledDirectory;
     private final CompileWorkDirectory workDir;
     private final ErrorLogFile compileErrorLog;
@@ -27,27 +28,27 @@ class PreCompiler {
 
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
-        System.out.println("compiling...");
-        int resultCode = ToolProvider.getSystemJavaCompiler()
-                .run(null, null, error, args);
+        System.out.println("[" + PreCompiler.count + "] compiling...");
+        int resultCode = ToolProvider.getSystemJavaCompiler().run(null, null, error, args);
 
         String errorMessage = error.toString(Charset.defaultCharset().toString());
 
-        this.compileErrorLog.write(errorMessage);
+        this.compileErrorLog.write(PreCompiler.count, errorMessage);
 
+        PreCompiler.count++;
         return new CompileResult(resultCode != 0, errorMessage);
     }
 
     private String[] buildJavacArgs() {
         JavaSourceFiles javaSourceFiles = this.preCompiledDirectory.collectSourceFiles();
-        ClassPath classPath = this.preCompiledDirectory.asClassPath();
+        String classPath = this.preCompiledDirectory.getStringPath();
 
         List<String> javacOptions = new ArrayList<>();
         javacOptions.add("-Xlint:none");
         javacOptions.add("-d");
         javacOptions.add(this.workDir.getStringPath());
         javacOptions.add("-cp");
-        javacOptions.add(classPath.getStringPath());
+        javacOptions.add(classPath);
         javacOptions.add("-encoding");
         javacOptions.add(GlobalOption.getEncoding().toString());
         javacOptions.addAll(javaSourceFiles.toStringList());
