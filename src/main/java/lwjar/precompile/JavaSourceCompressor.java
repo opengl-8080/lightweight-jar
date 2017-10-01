@@ -38,6 +38,10 @@ public class JavaSourceCompressor {
     }
 
     String compress(ProcessingFile file) {
+        if (this.level.equals(CompressLevel.NO_COMPRESS)) {
+            return file.getContent(GlobalOption.getEncoding());
+        }
+        
         try {
             CompilationUnit cu = JavaParser.parse(file.getPath(), GlobalOption.getEncoding());
             return this.removeLineSeparatorAndComments(cu);
@@ -161,6 +165,7 @@ public class JavaSourceCompressor {
     }
     
     enum CompressLevel {
+        NO_COMPRESS(0),
         REMOVE_COMMENTS(1),
         REMOVE_LINE_SEPARATOR(2),
         REMOVE_ANNOTATIONS(3),
@@ -171,6 +176,7 @@ public class JavaSourceCompressor {
         private static final Map<Integer, CompressLevel> mapping;
         static {
             Map<Integer, CompressLevel> map = new HashMap<>();
+            map.put(0, NO_COMPRESS);
             map.put(1, REMOVE_COMMENTS);
             map.put(2, REMOVE_LINE_SEPARATOR);
             map.put(3, REMOVE_ANNOTATIONS);

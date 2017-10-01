@@ -101,4 +101,12 @@ public class ProcessingFile {
     public int hashCode() {
         return file.hashCode();
     }
+
+    public String getContent(Charset encoding) {
+        try {
+            return new String(Files.readAllBytes(this.file), encoding);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }
