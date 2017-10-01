@@ -54,13 +54,11 @@ public class Directory {
         return new Directory(this.dir.resolve(relativePath.getPath()));
     }
 
-    public ProcessingFile findFileStartsWith(String fileNamePrefix) {
+    public List<ProcessingFile> findFilesStartsWith(String fileNamePrefix) {
         try (Stream<Path> stream = Files.list(this.dir)) {
-            Path file = stream.filter(path -> path.getFileName().toString().startsWith(fileNamePrefix))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalStateException(fileNamePrefix + "* is not exists."));
-            
-            return new ProcessingFile(file);
+            return stream.filter(path -> path.getFileName().toString().startsWith(fileNamePrefix))
+                            .map(ProcessingFile::new)
+                            .collect(toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

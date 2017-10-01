@@ -6,6 +6,7 @@ import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
 import java.io.IOException;
+import java.util.List;
 
 class LibraryClassDirectory {
     private final Directory directory;
@@ -21,7 +22,7 @@ class LibraryClassDirectory {
 
         System.out.println("coping no java source files...");
         this.directory.walkFiles(file -> {
-            if (file.isJavaSource() || file.isClassFile()) {
+            if (file.isJavaSource() || file.isClassFile() || file.isPackageInfo()) {
                 return;
             }
 
@@ -83,19 +84,20 @@ class LibraryClassDirectory {
         }
 
         uncompilableJavaSources.forEach(uncompilableJavaSource -> {
-            ProcessingFile originalClassFile = this.findClassFile(uncompilableJavaSource);
-            ProcessingFile outClassFile = this.resolveOutClassFile(preCompiledDirectory, originalClassFile);
-
-            originalClassFile.copyTo(outClassFile);
+            this.findClassFile(uncompilableJavaSource).forEach(originalClassFile -> {
+                // Original class files may exist more than one, if source class has some inner classes. 
+                ProcessingFile outClassFile = this.resolveOutClassFile(preCompiledDirectory, originalClassFile);
+                originalClassFile.copyTo(outClassFile);
+            });
         });
     }
 
-    private ProcessingFile findClassFile(UncompilableJavaSource javaSource) {
+    private List<ProcessingFile> findClassFile(UncompilableJavaSource javaSource) {
         RelativePath packagePath = javaSource.getPackagePath();
         Directory packageDirectory = this.directory.resolveDirectory(packagePath);
 
         String className = javaSource.getClassName();
-        return packageDirectory.findFileStartsWith(className);
+        return packageDirectory.findFilesStartsWith(className);
     }
 
     private ProcessingFile resolveOutClassFile(PreCompiledDirectory preCompiledDirectory, ProcessingFile originalClassFile) {
