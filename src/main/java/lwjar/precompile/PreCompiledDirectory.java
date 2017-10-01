@@ -5,14 +5,12 @@ import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
 
 class PreCompiledDirectory {
     private final Directory directory;
 
     PreCompiledDirectory(OutputDirectory outputDirectory) {
-        this.directory = outputDirectory.resolve("src");
+        this.directory = outputDirectory.resolveDirectory("src");
     }
 
     boolean has(RelativePath relativePath) {

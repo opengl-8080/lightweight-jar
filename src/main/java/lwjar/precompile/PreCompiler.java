@@ -1,14 +1,11 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
-import lwjar.primitive.Directory;
-import lwjar.primitive.RelativePath;
 
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +15,7 @@ class PreCompiler {
 
     PreCompiler(ErrorLogFile compileErrorLog, OutputDirectory outputDirectory) {
         this.compileErrorLog = compileErrorLog;
-        this.workDir = new CompileWorkDirectory(outputDirectory.resolve("work"));
+        this.workDir = new CompileWorkDirectory(outputDirectory.resolveDirectory("work"));
     }
 
     CompileResult compile(JavaSourceFiles javaSourceFiles, ClassPath classPath) throws IOException {
@@ -34,7 +31,7 @@ class PreCompiler {
 
         String errorMessage = error.toString(Charset.defaultCharset().toString());
 
-        this.compileErrorLog.append(errorMessage);
+        this.compileErrorLog.write(errorMessage);
 
         return new CompileResult(resultCode != 0, errorMessage);
     }
