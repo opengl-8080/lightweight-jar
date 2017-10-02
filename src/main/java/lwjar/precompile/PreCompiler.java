@@ -40,7 +40,7 @@ class PreCompiler {
     }
 
     private String[] buildJavacArgs() {
-        JavaSourceFiles javaSourceFiles = this.preCompiledDirectory.collectSourceFiles();
+        CompileTargetJavaSourceFiles compileTargetJavaSourceFiles = this.preCompiledDirectory.collectCompileTargetJavaSourceFiles();
         String classPath = this.preCompiledDirectory.getStringPath();
 
         List<String> javacOptions = new ArrayList<>();
@@ -51,7 +51,7 @@ class PreCompiler {
         javacOptions.add(classPath);
         javacOptions.add("-encoding");
         javacOptions.add(GlobalOption.getEncoding().toString());
-        javacOptions.addAll(javaSourceFiles.toStringList());
+        javacOptions.addAll(compileTargetJavaSourceFiles.toStringList());
 
         return javacOptions.toArray(new String[javacOptions.size()]);
     }

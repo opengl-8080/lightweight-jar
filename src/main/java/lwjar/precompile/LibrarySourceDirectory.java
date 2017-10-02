@@ -1,6 +1,5 @@
 package lwjar.precompile;
 
-import lwjar.GlobalOption;
 import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
@@ -12,19 +11,15 @@ class LibrarySourceDirectory {
     LibrarySourceDirectory(Directory directory) {
         this.directory = directory;
     }
-
-    void copyTo(PreCompiledDirectory preCompiledDirectory, JavaSourceCompressor javaSourceCompressor) {
-        
+    
+    void walkFiles(LibrarySourceVisitor visitor) {
         this.directory.walkFiles(file -> {
             RelativePath relativePath = this.directory.relativePath(file);
-            ProcessingFile outFile = preCompiledDirectory.resolve(relativePath);
-            
-            if (file.isJavaSource()) {
-                String compressedSource = javaSourceCompressor.compress(file);
-                outFile.write(compressedSource, GlobalOption.getEncoding());
-            } else if (!file.isManifestFile() && !file.isPackageInfo()) {
-                file.copyTo(outFile);
-            }
+            visitor.visit(file, relativePath);
         });
+    }
+    
+    interface LibrarySourceVisitor {
+        void visit(ProcessingFile file, RelativePath relativePath);
     }
 }

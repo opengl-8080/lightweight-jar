@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class JavaSourceFiles {
+class CompileTargetJavaSourceFiles {
     private Set<ProcessingFile> sourceFiles;
 
-    JavaSourceFiles(Collection<ProcessingFile> sourceFiles) {
+    CompileTargetJavaSourceFiles(Collection<ProcessingFile> sourceFiles) {
         this.sourceFiles = new HashSet<>(sourceFiles);
     }
 

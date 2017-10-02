@@ -26,7 +26,7 @@ class UncompilableJavaSource {
         return new RelativePath(packagePath);
     }
 
-    public void delete() {
+    void delete() {
         this.file.delete();
     }
 

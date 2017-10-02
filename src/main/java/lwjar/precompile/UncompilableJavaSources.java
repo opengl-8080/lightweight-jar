@@ -1,7 +1,11 @@
 package lwjar.precompile;
 
+import lwjar.primitive.ProcessingFile;
+
+import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 class UncompilableJavaSources {
     private final Set<UncompilableJavaSource> files;
@@ -10,8 +14,8 @@ class UncompilableJavaSources {
         this.files = files;
     }
     
-    void forEach(Consumer<UncompilableJavaSource> consumer) {
-        this.files.forEach(consumer);
+    Stream<ProcessingFile> map(Function<UncompilableJavaSource, List<ProcessingFile>> mapper) {
+        return this.files.stream().map(mapper).flatMap(List::stream);
     }
 
     void removeFiles() {
