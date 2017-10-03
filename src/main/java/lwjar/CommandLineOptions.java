@@ -1,5 +1,6 @@
 package lwjar;
 
+import lwjar.packaging.PackageCommand;
 import lwjar.precompile.PreCompileCommand;
 
 import java.nio.file.Path;

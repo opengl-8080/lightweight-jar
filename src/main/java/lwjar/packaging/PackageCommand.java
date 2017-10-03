@@ -1,4 +1,9 @@
-package lwjar;
+package lwjar.packaging;
+
+import lwjar.Command;
+import lwjar.FileUtil;
+import lwjar.LightweightJarExecutor;
+import lwjar.Main;
 
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
