@@ -91,6 +91,19 @@ class PreCompiledDirectory {
         });
     }
 
+    void copyApplicationSourceFiles(ApplicationSourceDirectory applicationSourceDirectory, JavaSourceCompressor javaSourceCompressor) {
+        applicationSourceDirectory.walkFiles((file, relativePath) -> {
+            ProcessingFile outFile = this.resolve(relativePath);
+
+            if (file.isJavaSource()) {
+                String compressed = javaSourceCompressor.compress(file);
+                outFile.write(compressed, GlobalOption.getEncoding());
+            } else {
+                file.copyTo(outFile);
+            }
+        });
+    }
+
     private boolean has(RelativePath relativePath) {
         ProcessingFile file = this.directory.resolve(relativePath);
         return file.exists();

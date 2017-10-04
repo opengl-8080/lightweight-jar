@@ -95,10 +95,11 @@ public class CommandLineOptions {
     
     private PreCompileCommand buildPreCompileCommand() {
         String encoding = null;
-        Path sourceDir = null;
-        Path classesDir = null;
+        Path librarySourceDir = null;
+        Path libraryClassDir = null;
         Path outDir = null;
         Integer compressLevel = null;
+        Path applicationSourceDir = null;
 
         Iterator<String> ite = this.args.iterator();
         ite.next(); // skip command token.
@@ -109,17 +110,22 @@ public class CommandLineOptions {
                 if (!ite.hasNext()) {
                     throw new CommandLineOptionException("'-s' needs source directory path.");
                 }
-                sourceDir = Paths.get(ite.next());
+                librarySourceDir = Paths.get(ite.next());
             } else if ("-c".equals(arg)) {
                 if (!ite.hasNext()) {
                     throw new CommandLineOptionException("'-c' needs classes directory path.");
                 }
-                classesDir = Paths.get(ite.next());
+                libraryClassDir = Paths.get(ite.next());
             } else if ("-o".equals(arg)) {
                 if (!ite.hasNext()) {
                     throw new CommandLineOptionException("'-o' needs output directory path.");
                 }
                 outDir = Paths.get(ite.next());
+            } else if ("--application-source".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--application-source' needs application source directory.");
+                }
+                applicationSourceDir = Paths.get(ite.next());
             } else if ("--encoding".equals(arg)) {
                 if (!ite.hasNext()) {
                     throw new CommandLineOptionException("'--encoding' needs charset name of source code.");
@@ -140,10 +146,14 @@ public class CommandLineOptions {
             }
         }
 
-        if (sourceDir == null) {
+        if (librarySourceDir == null) {
             throw new CommandLineOptionException("'-s' option is required. Set source files directory path.");
         }
+        
+        if (applicationSourceDir == null) {
+            throw new CommandLineOptionException("'--application-source' option is required. Set application source files directory path.");
+        }
 
-        return new PreCompileCommand(encoding, sourceDir, classesDir, outDir, compressLevel);
+        return new PreCompileCommand(encoding, applicationSourceDir, librarySourceDir, libraryClassDir, outDir, compressLevel);
     }
 }

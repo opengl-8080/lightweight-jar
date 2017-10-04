@@ -12,6 +12,7 @@ import java.nio.file.Path;
 public class PreCompileCommand implements Command {
     private static final int MAX_RETRY_COMPILE_TIMES = 100;
 
+    private final ApplicationSourceDirectory applicationSourceDirectory;
     private final LibrarySourceDirectory librarySourceDirectory;
     private final LibraryClassDirectory libraryClassDirectory;
     private final PreCompiledDirectory preCompiledDirectory;
@@ -19,9 +20,10 @@ public class PreCompileCommand implements Command {
     private final PreCompiler preCompiler;
     private final JavaSourceCompressor.CompressLevel compressLevel;
 
-    public PreCompileCommand(String encoding, Path orgSrcDir, Path orgClassesDir, Path outDir, Integer compressLevel) {
+    public PreCompileCommand(String encoding, Path applicationSourceDir, Path orgSrcDir, Path orgClassesDir, Path outDir, Integer compressLevel) {
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         
+        this.applicationSourceDirectory = new ApplicationSourceDirectory(new Directory(applicationSourceDir));
         this.librarySourceDirectory = new LibrarySourceDirectory(new Directory(orgSrcDir));
         this.libraryClassDirectory = new LibraryClassDirectory(new Directory(orgClassesDir));
 
@@ -55,6 +57,7 @@ public class PreCompileCommand implements Command {
 
         this.preCompiledDirectory.copyClassFileThatOnlyExistsInBinaryJar(this.libraryClassDirectory);
         this.preCompiledDirectory.copyResourceFilesFrom(this.libraryClassDirectory);
+        this.preCompiledDirectory.copyApplicationSourceFiles(this.applicationSourceDirectory, javaSourceCompressor);
     }
 
     private void replaceErrorFiles(CompileResult result) throws IOException {
