@@ -2,6 +2,7 @@ package lwjar.packaging;
 
 import lwjar.Command;
 import lwjar.FileUtil;
+import lwjar.GlobalOption;
 import lwjar.LightweightJarExecutor;
 import lwjar.Main;
 
@@ -28,7 +29,6 @@ import java.util.jar.Manifest;
 public class PackageCommand implements Command {
     private static final String SOURCE_RESOURCE_PATH = "src";
     private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
-    private final Charset encoding;
     private final String jarBase;
     private final Path srcDir;
     private final boolean springBoot;
@@ -37,7 +37,7 @@ public class PackageCommand implements Command {
     private final Path outDir;
 
     public PackageCommand(String encoding, String jarBase, Path srcDir, boolean springBoot, String mainClass, Path outDir) {
-        this.encoding = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
+        GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         this.jarBase = jarBase;
         this.srcDir = srcDir;
         this.springBoot = springBoot;
@@ -138,7 +138,7 @@ public class PackageCommand implements Command {
         
         manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), this.mainClass);
         manifest.getMainAttributes().put(new Attributes.Name("Is-Spring-Boot"), String.valueOf(this.springBoot));
-        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), this.encoding.name());
+        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), GlobalOption.getEncoding().name());
         
         return manifest;
     }
