@@ -121,4 +121,12 @@ public class Directory {
     public Path getPath() {
         return this.dir;
     }
+
+    public void copyTo(Directory to) {
+        this.walkFiles(fromFile -> {
+            RelativePath relativePath = this.relativePath(fromFile);
+            ProcessingFile toFile = to.resolve(relativePath);
+            fromFile.copyTo(toFile);
+        });
+    }
 }

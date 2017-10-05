@@ -1,10 +1,10 @@
 package lwjar.packaging;
 
 import lwjar.Command;
-import lwjar.FileUtil;
 import lwjar.GlobalOption;
 import lwjar.LightweightJarExecutor;
 import lwjar.Main;
+import lwjar.primitive.Directory;
 
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
@@ -30,7 +30,7 @@ public class PackageCommand implements Command {
     private static final String SOURCE_RESOURCE_PATH = "src";
     private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
     private final String jarBase;
-    private final Path srcDir;
+    private final SourceDirectory sourceDirectory;
     private final boolean springBoot;
     private final String mainClass;
     
@@ -39,7 +39,7 @@ public class PackageCommand implements Command {
     public PackageCommand(String encoding, String jarBase, Path srcDir, boolean springBoot, String mainClass, Path outDir) {
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         this.jarBase = jarBase;
-        this.srcDir = srcDir;
+        this.sourceDirectory = new SourceDirectory(new Directory(srcDir));
         this.springBoot = springBoot;
         this.mainClass = mainClass;
         this.outDir = outDir == null ? Paths.get("./out") : outDir;
@@ -49,7 +49,7 @@ public class PackageCommand implements Command {
     public void execute() throws IOException {
         Path workDir = this.initWorkDir();
         this.extractExecutorClassFile(workDir);
-        this.copySourceFiles(workDir);
+        this.sourceDirectory.copyTo(new Directory(workDir));
         this.createJarFile(workDir);
     }
     
@@ -74,10 +74,6 @@ public class PackageCommand implements Command {
             Files.createDirectories(workMainClass.getParent());
             Files.copy(in, workMainClass, StandardCopyOption.REPLACE_EXISTING);
         }
-    }
-    
-    private void copySourceFiles(Path workDir) throws IOException {
-        FileUtil.copyFileTree(this.srcDir, workDir);
     }
     
     private void createJarFile(Path workDir) throws IOException {
