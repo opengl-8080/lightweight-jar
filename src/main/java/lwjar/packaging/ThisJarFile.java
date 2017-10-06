@@ -34,6 +34,6 @@ class ThisJarFile {
     }
 
     private boolean isExecutorClass(JarEntry entry) {
-        return entry.getName().endsWith(LightweightJarExecutor.class.getSimpleName() + ".class");
+        return entry.getName().endsWith(LightweightJarExecutor.getClassFileName());
     }
 }

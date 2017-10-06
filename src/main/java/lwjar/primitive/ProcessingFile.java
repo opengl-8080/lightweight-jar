@@ -1,5 +1,7 @@
 package lwjar.primitive;
 
+import lwjar.LightweightJarExecutor;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -119,6 +121,10 @@ public class ProcessingFile {
 
     public String getAbsolutePathString() {
         return this.file.toAbsolutePath().toString();
+    }
+    
+    public boolean isExecutorClassFile() {
+        return this.file.toString().endsWith(LightweightJarExecutor.getClassFileName());
     }
 
     @Override

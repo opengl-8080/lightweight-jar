@@ -42,10 +42,9 @@ class JarWorkDirectory {
 
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    Directory directory = new Directory(dir);
                     ProcessingFile asFile = new ProcessingFile(dir);
                     RelativePath relativePath = JarWorkDirectory.this.directory.relativePath(asFile);
-                    visitor.visit(directory, relativePath);
+                    visitor.visitDirectory(relativePath);
 
                     return super.preVisitDirectory(dir, attrs);
                 }
@@ -56,7 +55,7 @@ class JarWorkDirectory {
     }
     
     public interface JarWorkDirectoryVisitor {
-        void visit(ProcessingFile file, RelativePath relativePath);
-        void visit(Directory directory, RelativePath relativePath);
+        void visit(ProcessingFile file, RelativePath relativePath) throws IOException;
+        void visitDirectory(RelativePath relativePath) throws IOException;
     }
 }

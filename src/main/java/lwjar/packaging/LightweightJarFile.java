@@ -1,83 +1,71 @@
 package lwjar.packaging;
 
-import lwjar.LightweightJarExecutor;
-import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-class LightweightJarFile implements AutoCloseable {
+class LightweightJarFile {
     private static final String SOURCE_RESOURCE_PATH = "src";
-    private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
     
-    private final JarOutputStream jar;
+    private final ProcessingFile file;
+    private final ManifestFile manifestFile;
 
     LightweightJarFile(ProcessingFile file, ManifestFile manifestFile) {
-        try {
-            this.jar = new JarOutputStream(file.getOutputStream(), manifestFile.toManifest());
+        this.file = Objects.requireNonNull(file);
+        this.manifestFile = Objects.requireNonNull(manifestFile);
+    }
+
+    void buildFrom(JarWorkDirectory jarWorkDirectory) {
+        try (JarOutputStream jar = new JarOutputStream(this.file.getOutputStream(), this.manifestFile.toManifest())) {
+            jarWorkDirectory.walkTree(new JarBuilder(jar));
+            jar.closeEntry();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
+    
+    private static class JarBuilder implements JarWorkDirectory.JarWorkDirectoryVisitor {
+        private final JarOutputStream jar;
 
-    @Override
-    public void close() {
-        try {
-            this.jar.closeEntry();
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
+        private JarBuilder(JarOutputStream jar) {
+            this.jar = jar;
         }
-        try {
-            this.jar.close();
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
-        }
-    }
 
-    void put(ProcessingFile file, RelativePath relativePath) {
-        try {
-            String path = relativePath.getPath().toString().replace("\\", "/");
-            if (!isMainClass(file.getPath())) {
+        @Override
+        public void visit(ProcessingFile file, RelativePath relativePath) throws IOException {
+            String path = relativePath.toSlashPathString();
+            if (!file.isExecutorClassFile()) {
                 path = SOURCE_RESOURCE_PATH + "/" + path;
             }
             JarEntry entry = new JarEntry(path);
-            jar.putNextEntry(entry);
+            this.jar.putNextEntry(entry);
 
             try (InputStream in = file.getInputStream()) {
                 byte[] buf = new byte[1024];
                 int length;
                 while ((length = in.read(buf)) != -1) {
-                    jar.write(buf, 0, length);
+                    this.jar.write(buf, 0, length);
                 }
             } finally {
-                jar.closeEntry();
+                this.jar.closeEntry();
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
-    }
-    
-    private boolean isMainClass(Path file) {
-        return file.getFileName().toString().equals(EXECUTOR_CLASS_NAME);
-    }
 
-    void put(Directory directory, RelativePath relativePath) {
-        String path = SOURCE_RESOURCE_PATH + "/" + relativePath.getPath().toString().replace("\\", "/");
-        if (!path.endsWith("/")) {
-            path = path + "/";
-        }
-        JarEntry entry = new JarEntry(path);
-        try {
-            jar.putNextEntry(entry);
-            jar.closeEntry();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        @Override
+        public void visitDirectory(RelativePath relativePath) throws IOException {
+            String path = SOURCE_RESOURCE_PATH + "/" + relativePath.toSlashPathString();
+            if (!path.endsWith("/")) {
+                path = path + "/";
+            }
+            JarEntry entry = new JarEntry(path);
+            this.jar.putNextEntry(entry);
+            this.jar.closeEntry();
         }
     }
 }

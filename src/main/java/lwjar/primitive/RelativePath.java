@@ -22,6 +22,10 @@ public class RelativePath {
         return new RelativePath(this.path.getParent());
     }
     
+    public String toSlashPathString() {
+        return this.path.toString().replace("\\", "/");
+    }
+    
     public Path getPath() {
         return this.path;
     }

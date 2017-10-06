@@ -25,6 +25,10 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 
 public class LightweightJarExecutor {
+    
+    public static String getClassFileName() {
+        return LightweightJarExecutor.class.getSimpleName() + ".class";
+    }
 
     public static void main(String[] args) throws Exception {
         new LightweightJarExecutor().execute(args);
