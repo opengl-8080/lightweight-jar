@@ -26,17 +26,17 @@ public class PackageCommand implements Command {
     private final SourceDirectory sourceDirectory;
     private final JarWorkDirectory jarWorkDirectory;
     
-    private final String jarBase;
+    private final JarName jarName;
     private final boolean springBoot;
     private final String mainClass;
     
 
-    public PackageCommand(String encoding, String jarBase, Path srcDir, boolean springBoot, String mainClass, Path outDir) {
+    public PackageCommand(String encoding, String jarName, Path srcDir, boolean springBoot, String mainClass, Path outDir) {
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         this.outputDirectory = new OutputDirectory(outDir);
         this.sourceDirectory = new SourceDirectory(new Directory(srcDir));
         this.jarWorkDirectory = new JarWorkDirectory(this.outputDirectory);
-        this.jarBase = jarBase;
+        this.jarName = new JarName(jarName);
         this.springBoot = springBoot;
         this.mainClass = mainClass;
     }
@@ -61,7 +61,7 @@ public class PackageCommand implements Command {
     }
     
     private void createJarFile() throws IOException {
-        ProcessingFile jarFile = this.outputDirectory.resolveFile(new RelativePath(this.jarBase + ".jar"));
+        ProcessingFile jarFile = this.outputDirectory.resolveFile(this.jarName.toRelativePath());
         
         try (LightweightJarFile jar = new LightweightJarFile(jarFile, this.createManifest())) {
             this.jarWorkDirectory.walkTree(new JarWorkDirectory.JarWorkDirectoryVisitor() {
