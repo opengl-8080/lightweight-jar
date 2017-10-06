@@ -5,29 +5,22 @@ import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
 class LightweightJarFile implements AutoCloseable {
     private static final String SOURCE_RESOURCE_PATH = "src";
     private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
     
-    private final ProcessingFile file;
     private final JarOutputStream jar;
 
-    LightweightJarFile(ProcessingFile file, Manifest manifest) {
-        this.file = Objects.requireNonNull(file);
+    LightweightJarFile(ProcessingFile file, ManifestFile manifestFile) {
         try {
-            this.jar = new JarOutputStream(file.getOutputStream(), manifest);
+            this.jar = new JarOutputStream(file.getOutputStream(), manifestFile.toManifest());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

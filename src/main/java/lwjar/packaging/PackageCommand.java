@@ -2,7 +2,6 @@ package lwjar.packaging;
 
 import lwjar.Command;
 import lwjar.GlobalOption;
-import lwjar.LightweightJarExecutor;
 import lwjar.OutputDirectory;
 import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
@@ -11,8 +10,6 @@ import lwjar.primitive.RelativePath;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 public class PackageCommand implements Command {
     
@@ -21,8 +18,7 @@ public class PackageCommand implements Command {
     private final JarWorkDirectory jarWorkDirectory;
     
     private final JarName jarName;
-    private final ApplicationMainClass applicationMainClass;
-    private final boolean springBoot;
+    private final ManifestFile manifestFile;
     
 
     public PackageCommand(String encoding, String jarName, Path srcDir, boolean springBoot, String applicationMainClass, Path outDir) {
@@ -31,8 +27,7 @@ public class PackageCommand implements Command {
         this.sourceDirectory = new SourceDirectory(new Directory(srcDir));
         this.jarWorkDirectory = new JarWorkDirectory(this.outputDirectory);
         this.jarName = new JarName(jarName);
-        this.applicationMainClass = new ApplicationMainClass(applicationMainClass);
-        this.springBoot = springBoot;
+        this.manifestFile = new ManifestFile(new ApplicationMainClass(applicationMainClass), springBoot, GlobalOption.getEncoding());
     }
 
     @Override
@@ -45,7 +40,7 @@ public class PackageCommand implements Command {
     private void createJarFile() throws IOException {
         ProcessingFile jarFile = this.outputDirectory.resolveFile(this.jarName.toRelativePath());
         
-        try (LightweightJarFile jar = new LightweightJarFile(jarFile, this.createManifest())) {
+        try (LightweightJarFile jar = new LightweightJarFile(jarFile, this.manifestFile)) {
             this.jarWorkDirectory.walkTree(new JarWorkDirectory.JarWorkDirectoryVisitor() {
 
                 @Override
@@ -59,18 +54,5 @@ public class PackageCommand implements Command {
                 }
             });
         }
-    }
-
-    private Manifest createManifest() {
-        Manifest manifest = new Manifest();
-        
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, LightweightJarExecutor.class.getName());
-        
-        manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), this.applicationMainClass.getName());
-        manifest.getMainAttributes().put(new Attributes.Name("Is-Spring-Boot"), String.valueOf(this.springBoot));
-        manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), GlobalOption.getEncoding().name());
-        
-        return manifest;
     }
 }

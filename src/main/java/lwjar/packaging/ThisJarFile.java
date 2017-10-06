@@ -12,14 +12,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 class ThisJarFile {
-    private static final String EXECUTOR_CLASS_NAME = LightweightJarExecutor.class.getSimpleName() + ".class";
-    
     void extractExecutorClassFileTo(JarWorkDirectory jarWorkDirectory) {
         try {
             JarEntry executorClass = this.findThisJarFile().stream()
                     .filter(this::isExecutorClass)
                     .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("not found executor executor class. > " + EXECUTOR_CLASS_NAME));
+                    .orElseThrow(() -> new IllegalStateException("not found executor executor class. > " + LightweightJarExecutor.class));
 
             try (InputStream in = PackageCommand.class.getResourceAsStream("/" + executorClass.getName())) {
                 ProcessingFile executorClassFile = jarWorkDirectory.resolveFile(executorClass.getName());
@@ -36,6 +34,6 @@ class ThisJarFile {
     }
 
     private boolean isExecutorClass(JarEntry entry) {
-        return entry.getName().endsWith(EXECUTOR_CLASS_NAME);
+        return entry.getName().endsWith(LightweightJarExecutor.class.getSimpleName() + ".class");
     }
 }
