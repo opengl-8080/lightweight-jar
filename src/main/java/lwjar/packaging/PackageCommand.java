@@ -27,18 +27,18 @@ public class PackageCommand implements Command {
     private final JarWorkDirectory jarWorkDirectory;
     
     private final JarName jarName;
+    private final ApplicationMainClass applicationMainClass;
     private final boolean springBoot;
-    private final String mainClass;
     
 
-    public PackageCommand(String encoding, String jarName, Path srcDir, boolean springBoot, String mainClass, Path outDir) {
+    public PackageCommand(String encoding, String jarName, Path srcDir, boolean springBoot, String applicationMainClass, Path outDir) {
         GlobalOption.setEncoding(encoding == null ? Charset.defaultCharset() : Charset.forName(encoding));
         this.outputDirectory = new OutputDirectory(outDir);
         this.sourceDirectory = new SourceDirectory(new Directory(srcDir));
         this.jarWorkDirectory = new JarWorkDirectory(this.outputDirectory);
         this.jarName = new JarName(jarName);
+        this.applicationMainClass = new ApplicationMainClass(applicationMainClass);
         this.springBoot = springBoot;
-        this.mainClass = mainClass;
     }
 
     @Override
@@ -85,7 +85,7 @@ public class PackageCommand implements Command {
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, LightweightJarExecutor.class.getName());
         
-        manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), this.mainClass);
+        manifest.getMainAttributes().put(new Attributes.Name("Actual-Main-Class"), this.applicationMainClass.getName());
         manifest.getMainAttributes().put(new Attributes.Name("Is-Spring-Boot"), String.valueOf(this.springBoot));
         manifest.getMainAttributes().put(new Attributes.Name("Javac-Encoding"), GlobalOption.getEncoding().name());
         
