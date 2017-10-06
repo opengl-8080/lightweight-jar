@@ -1,10 +1,15 @@
 package lwjar.primitive;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 public class RelativePath {
     private final Path path;
+
+    public RelativePath(String path) {
+        this(Paths.get(path));
+    }
 
     public RelativePath(Path path) {
         this.path = Objects.requireNonNull(path);
@@ -13,12 +18,12 @@ public class RelativePath {
         }
     }
     
-    public Path getPath() {
-        return this.path;
+    public RelativePath getParentPath() {
+        return new RelativePath(this.path.getParent());
     }
     
-    protected String getName() {
-        return this.path.getFileName().toString();
+    public Path getPath() {
+        return this.path;
     }
 
     @Override

@@ -1,6 +1,10 @@
 package lwjar.primitive;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -19,6 +23,22 @@ public class ProcessingFile {
     public ProcessingFile replaceFileName(String name) {
         Path parent = this.getParentDir();
         return new ProcessingFile(parent.resolve(name));
+    }
+    
+    public InputStream getInputStream() {
+        try {
+            return new BufferedInputStream(Files.newInputStream(this.file, StandardOpenOption.READ));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+    
+    public OutputStream getOutputStream() {
+        try {
+            return new BufferedOutputStream(Files.newOutputStream(this.file));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void delete() {
@@ -42,6 +62,15 @@ public class ProcessingFile {
         try {
             this.createParentDirectoriesIfNotExists();
             Files.write(this.file, text.getBytes(charset), StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void write(InputStream in) {
+        try {
+            this.createParentDirectoriesIfNotExists();
+            Files.copy(in, this.file, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

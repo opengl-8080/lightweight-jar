@@ -1,6 +1,7 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
+import lwjar.OutputDirectory;
 import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;

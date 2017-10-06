@@ -11,7 +11,7 @@ class SourceDirectory {
         this.directory = Objects.requireNonNull(directory);
     }
 
-    void copyTo(Directory to) {
-        this.directory.copyTo(to);
+    void copyTo(JarWorkDirectory jarWorkDirectory) {
+        this.directory.copyTo(jarWorkDirectory.getDirectory());
     }
 }

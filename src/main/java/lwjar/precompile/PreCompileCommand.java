@@ -2,6 +2,7 @@ package lwjar.precompile;
 
 import lwjar.Command;
 import lwjar.GlobalOption;
+import lwjar.OutputDirectory;
 import lwjar.TooManyCompileErrorException;
 import lwjar.primitive.Directory;
 

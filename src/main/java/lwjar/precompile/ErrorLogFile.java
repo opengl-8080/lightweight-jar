@@ -1,10 +1,10 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
+import lwjar.OutputDirectory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-import java.nio.file.Paths;
 import java.util.Objects;
 
 class ErrorLogFile {
@@ -21,7 +21,7 @@ class ErrorLogFile {
         }
 
         String fileName = String.format(FILE_NAME, compileCounter);
-        ProcessingFile file = this.outputDirectory.resolveFile(new RelativePath(Paths.get(fileName)));
+        ProcessingFile file = this.outputDirectory.resolveFile(new RelativePath(fileName));
         file.write(text, GlobalOption.getEncoding());
     }
 }

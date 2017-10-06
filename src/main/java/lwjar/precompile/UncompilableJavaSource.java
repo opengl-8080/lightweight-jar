@@ -3,7 +3,6 @@ package lwjar.precompile;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-import java.nio.file.Path;
 import java.util.Objects;
 
 class UncompilableJavaSource {
@@ -21,9 +20,7 @@ class UncompilableJavaSource {
 
     RelativePath getPackagePath() {
         RelativePath relativePath = this.baseDirectory.relative(this.file);
-        Path packagePath = relativePath.getPath().getParent();
-
-        return new RelativePath(packagePath);
+        return relativePath.getParentPath();
     }
 
     void delete() {

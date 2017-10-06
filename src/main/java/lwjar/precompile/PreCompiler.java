@@ -1,6 +1,7 @@
 package lwjar.precompile;
 
 import lwjar.GlobalOption;
+import lwjar.OutputDirectory;
 
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
