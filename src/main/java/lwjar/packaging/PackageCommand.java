@@ -49,14 +49,14 @@ public class PackageCommand implements Command {
     }
     
     private void extractExecutorClassFile() throws IOException {
-        JarEntry mainClass = this.findThisJarFile().stream()
-                .filter(this::isMainClass)
+        JarEntry executorClass = this.findThisJarFile().stream()
+                .filter(this::isExecutorClass)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("not found executor main class. > " + EXECUTOR_CLASS_NAME));
+                .orElseThrow(() -> new IllegalStateException("not found executor executor class. > " + EXECUTOR_CLASS_NAME));
 
-        try (InputStream in = PackageCommand.class.getResourceAsStream("/" + mainClass.getName())) {
-            ProcessingFile workMainClass = this.jarWorkDirectory.resolveFile(mainClass.getName());
-            workMainClass.write(in);
+        try (InputStream in = PackageCommand.class.getResourceAsStream("/" + executorClass.getName())) {
+            ProcessingFile executorClassFile = this.jarWorkDirectory.resolveFile(executorClass.getName());
+            executorClassFile.write(in);
         }
     }
     
@@ -92,7 +92,7 @@ public class PackageCommand implements Command {
         return manifest;
     }
     
-    private boolean isMainClass(JarEntry entry) {
+    private boolean isExecutorClass(JarEntry entry) {
         return entry.getName().endsWith(EXECUTOR_CLASS_NAME);
     }
 
