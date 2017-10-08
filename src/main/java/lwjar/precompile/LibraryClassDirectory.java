@@ -15,10 +15,6 @@ class LibraryClassDirectory {
     }
     
     void walkFiles(LibraryClassDirectoryVisitor visitor) {
-        if (this.directory == null) {
-            return;
-        }
-
         this.directory.walkFiles(file -> {
             RelativePath relativeClassFilePath = this.directory.relativePath(file);
             visitor.visit(file, relativeClassFilePath);
@@ -32,10 +28,6 @@ class LibraryClassDirectory {
     }
     
     void walkOriginalClassFiles(UncompilableJavaSources uncompilableJavaSources, LibraryClassDirectoryVisitor visitor) {
-        if (this.directory == null) {
-            throw new IllegalStateException("-c options is not set. please set classes directory path.");
-        }
-
         uncompilableJavaSources
             .map(this::toOriginalClassFiles)
             .forEach(originalClassFile -> {

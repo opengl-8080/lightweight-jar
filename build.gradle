@@ -29,4 +29,5 @@ repositories {
 
 dependencies {
   compile 'com.github.javaparser:javaparser-core:3.3.0'
+  compile 'commons-cli:commons-cli:1.4'
 }
