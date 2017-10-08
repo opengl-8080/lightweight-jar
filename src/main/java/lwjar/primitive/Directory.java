@@ -42,11 +42,11 @@ public class Directory {
         Path dir = this.dir;
         
         if (dir.isAbsolute() && !path.isAbsolute()) {
-            path = path.toAbsolutePath();
+            path = path.toAbsolutePath().normalize();
         } else if (!dir.isAbsolute() && path.isAbsolute()) {
-            dir = dir.toAbsolutePath();
+            dir = dir.toAbsolutePath().normalize();
         }
-        
+
         return new RelativePath(dir.relativize(path));
     }
 
