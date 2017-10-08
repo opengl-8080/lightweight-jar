@@ -99,6 +99,7 @@ public class CommandLineOptions {
         Path libraryClassDir = null;
         Path outDir = null;
         Integer compressLevel = null;
+        Integer retryCount = null;
         Path applicationSourceDir = null;
 
         Iterator<String> ite = this.args.iterator();
@@ -139,7 +140,18 @@ public class CommandLineOptions {
                 try {
                     compressLevel = Integer.valueOf(strCompressLevel);
                 } catch (NumberFormatException e) {
-                    throw new CommandLineOptionException("--compress-level (" + strCompressLevel + ") must be number.");
+                    throw new CommandLineOptionException("'--compress-level' (" + strCompressLevel + ") must be number.");
+                }
+            } else if ("--retry-count".equals(arg)) {
+                if (!ite.hasNext()) {
+                    throw new CommandLineOptionException("'--retry-count' needs count of retry compile.");
+                }
+                
+                String strRetryCount = ite.next();
+                try {
+                    retryCount = Integer.parseInt(strRetryCount);
+                } catch (NumberFormatException e) {
+                    throw new CommandLineOptionException("'--retry-count' (" + strRetryCount + ") must be number.");
                 }
             } else {
                 throw new CommandLineOptionException("'pre-compile' command accepts options '-s', '-c' and '-o'. But you set unknown option > '" + arg + "'.");
@@ -154,6 +166,6 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("'--application-source' option is required. Set application source files directory path.");
         }
 
-        return new PreCompileCommand(encoding, applicationSourceDir, librarySourceDir, libraryClassDir, outDir, compressLevel);
+        return new PreCompileCommand(encoding, applicationSourceDir, librarySourceDir, libraryClassDir, outDir, compressLevel, retryCount);
     }
 }
