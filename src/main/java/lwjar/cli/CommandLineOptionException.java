@@ -1,7 +1,9 @@
 package lwjar.cli;
 
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public class CommandLineOptionException extends RuntimeException {
     private final Options options;
@@ -22,8 +24,12 @@ public class CommandLineOptionException extends RuntimeException {
         System.err.println();
         
         if (this.options != null) {
-            HelpFormatter help = new HelpFormatter();
-            help.printHelp("java -jar lightweight-jar.jar " + command, this.options);
+            HelpCommand help = new HelpCommand(this.command, this.options);
+            try {
+                help.execute();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 }

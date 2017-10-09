@@ -48,7 +48,7 @@ public class CommandLineOptions {
         throw new CommandLineOptionException("unknown command > '" + this.commandName + "'");
     }
     
-    private BuildCommand buildBuildCommand() {
+    private Command buildBuildCommand() {
         Options options = new OptionsBuilder()
                 .required(Option.LIBRARY_SOURCE)
                 .required(Option.LIBRARY_CLASS)
@@ -60,7 +60,12 @@ public class CommandLineOptions {
                 .optional(Option.ENCODING)
                 .optional(Option.COMPRESS_LEVEL)
                 .optional(Option.RETRY_COUNT)
+                .optional(Option.HELP)
                 .build();
+        
+        if (this.hasHelp()) {
+            return new HelpCommand("build", options);
+        }
         
         try {
             DefaultParser parser = new DefaultParser();
@@ -97,7 +102,7 @@ public class CommandLineOptions {
         }
     }
 
-    private PackageCommand buildPackageCommand() {
+    private Command buildPackageCommand() {
         Options options = new OptionsBuilder()
                 .required(Option.SOURCE)
                 .required(Option.MAIN_CLASS)
@@ -105,12 +110,17 @@ public class CommandLineOptions {
                 .optional(Option.OUTPUT)
                 .optional(Option.ENCODING)
                 .optional(Option.SPRING_BOOT)
+                .optional(Option.HELP)
                 .build();
+
+        if (this.hasHelp()) {
+            return new HelpCommand("package", options);
+        }
 
         try {
             DefaultParser parser = new DefaultParser();
             CommandLine commandLine = parser.parse(options, this.arguments);
-
+            
             // required
             SourceDirectory sourceDirectory = this.getSourceDirectory(commandLine);
             ApplicationMainClass applicationMainClass = this.getApplicationMainClass(commandLine);
@@ -134,7 +144,7 @@ public class CommandLineOptions {
     }
     
 
-    private PreCompileCommand buildPreCompileCommand() {
+    private Command buildPreCompileCommand() {
         Options options = new OptionsBuilder()
                 .required(Option.LIBRARY_SOURCE)
                 .required(Option.LIBRARY_CLASS)
@@ -143,12 +153,17 @@ public class CommandLineOptions {
                 .optional(Option.ENCODING)
                 .optional(Option.COMPRESS_LEVEL)
                 .optional(Option.RETRY_COUNT)
+                .optional(Option.HELP)
                 .build();
 
+        if (this.hasHelp()) {
+            return new HelpCommand("pre-compile", options);
+        }
+        
         try {
             DefaultParser parser = new DefaultParser();
             CommandLine commandLine = parser.parse(options, this.arguments);
-
+            
             // required
             LibrarySourceDirectory librarySourceDirectory = this.getLibrarySourceDirectory(commandLine);
             LibraryClassDirectory libraryClassDirectory = this.getLibraryClassDirectory(commandLine);
@@ -172,7 +187,17 @@ public class CommandLineOptions {
             throw new CommandLineOptionException("pre-compile", options, e.getMessage());
         }
     }
-    
+
+
+    private boolean hasHelp() {
+        Options options = new OptionsBuilder().optional(Option.HELP).build();
+        try {
+            CommandLine commandLine = new DefaultParser().parse(options, this.arguments);
+            return this.existsOption(commandLine, Option.HELP.shortName);
+        } catch (ParseException e) {
+            throw new CommandLineOptionException(e.getMessage());
+        }
+    }
 
     private LibrarySourceDirectory getLibrarySourceDirectory(CommandLine commandLine) {
         Path path = this.getRequiredPath(commandLine, Option.LIBRARY_SOURCE.shortName);

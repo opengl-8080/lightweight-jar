@@ -11,7 +11,8 @@ public enum Option {
     ENCODING("e", "encoding", true, "The character encoding. Default is depended on an environment."),
     COMPRESS_LEVEL("l", "compress-level", true, "The source code compress level (0, 1, 2, 3, 4). Default is 4."),
     RETRY_COUNT("r", "retry-count", true, "The number of retry to compile. Default is 100."),
-    SOURCE("s", "source", true, "A path of sources directory.")
+    SOURCE("s", "source", true, "A path of sources directory."),
+    HELP("h", "help", false, "Print command help.")
     ;
     
     public final String shortName;
