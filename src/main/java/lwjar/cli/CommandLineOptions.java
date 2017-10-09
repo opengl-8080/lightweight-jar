@@ -192,7 +192,7 @@ public class CommandLineOptions {
     private boolean hasHelp() {
         Options options = new OptionsBuilder().optional(Option.HELP).build();
         try {
-            CommandLine commandLine = new DefaultParser().parse(options, this.arguments);
+            CommandLine commandLine = new DefaultParser().parse(options, this.arguments, true);
             return this.existsOption(commandLine, Option.HELP.shortName);
         } catch (ParseException e) {
             throw new CommandLineOptionException(e.getMessage());
