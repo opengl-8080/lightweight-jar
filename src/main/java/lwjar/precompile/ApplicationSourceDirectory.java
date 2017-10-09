@@ -6,10 +6,10 @@ import lwjar.primitive.RelativePath;
 
 import java.util.Objects;
 
-class ApplicationSourceDirectory {
+public class ApplicationSourceDirectory {
     private final Directory directory;
 
-    ApplicationSourceDirectory(Directory directory) {
+    public ApplicationSourceDirectory(Directory directory) {
         this.directory = Objects.requireNonNull(directory);
     }
 

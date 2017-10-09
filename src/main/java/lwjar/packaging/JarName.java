@@ -4,10 +4,10 @@ import lwjar.primitive.RelativePath;
 
 import java.util.Objects;
 
-class JarName {
+public class JarName {
     private final String name;
     
-    JarName(String name) {
+    public JarName(String name) {
         this.name = Objects.requireNonNull(name);
     }
     

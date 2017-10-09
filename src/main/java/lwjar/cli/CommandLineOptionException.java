@@ -1,9 +1,9 @@
-package lwjar;
+package lwjar.cli;
 
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
-class CommandLineOptionException extends RuntimeException {
+public class CommandLineOptionException extends RuntimeException {
     private final Options options;
     private final String command;
 
@@ -17,7 +17,7 @@ class CommandLineOptionException extends RuntimeException {
         this.command = command;
     }
     
-    void printErrorMessage() {
+    public void printErrorMessage() {
         System.err.println(this.getMessage());
         System.err.println();
         

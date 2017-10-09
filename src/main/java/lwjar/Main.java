@@ -1,5 +1,9 @@
 package lwjar;
 
+import lwjar.cli.Command;
+import lwjar.cli.CommandLineOptionException;
+import lwjar.cli.CommandLineOptions;
+
 public class Main {
     public static void main(String[] args) {
         try {

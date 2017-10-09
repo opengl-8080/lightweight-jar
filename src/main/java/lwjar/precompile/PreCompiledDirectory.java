@@ -117,4 +117,8 @@ class PreCompiledDirectory {
     private boolean exists() {
         return this.directory.exists();
     }
+
+    public Directory getDirectory() {
+        return this.directory;
+    }
 }

@@ -1,4 +1,4 @@
-package lwjar;
+package lwjar.cli;
 
 import java.io.IOException;
 

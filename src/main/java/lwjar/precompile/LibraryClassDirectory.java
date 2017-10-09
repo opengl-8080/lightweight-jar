@@ -7,10 +7,10 @@ import lwjar.primitive.RelativePath;
 
 import java.util.List;
 
-class LibraryClassDirectory {
+public class LibraryClassDirectory {
     private final Directory directory;
 
-    LibraryClassDirectory(Directory directory) {
+    public LibraryClassDirectory(Directory directory) {
         this.directory = directory;
     }
     

@@ -164,7 +164,7 @@ public class JavaSourceCompressor {
         return REMOVE_TARGET_ANNOTATION_NAMES.contains(name);
     }
     
-    enum CompressLevel {
+    public enum CompressLevel {
         NO_COMPRESS(0),
         REMOVE_COMMENTS(1),
         REMOVE_LINE_SEPARATOR(2),
@@ -184,7 +184,7 @@ public class JavaSourceCompressor {
             mapping = Collections.unmodifiableMap(map);
         }
         
-        static CompressLevel valueOf(Integer level) {
+        public static CompressLevel valueOf(Integer level) {
             return mapping.getOrDefault(level, REMOVE_PRIVATE_MODIFIERS);
         }
 

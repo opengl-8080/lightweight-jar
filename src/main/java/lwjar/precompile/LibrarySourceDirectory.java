@@ -4,11 +4,11 @@ import lwjar.primitive.Directory;
 import lwjar.primitive.ProcessingFile;
 import lwjar.primitive.RelativePath;
 
-class LibrarySourceDirectory {
+public class LibrarySourceDirectory {
     
     private final Directory directory;
 
-    LibrarySourceDirectory(Directory directory) {
+    public LibrarySourceDirectory(Directory directory) {
         this.directory = directory;
     }
     

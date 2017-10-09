@@ -4,10 +4,10 @@ import lwjar.primitive.Directory;
 
 import java.util.Objects;
 
-class SourceDirectory {
+public class SourceDirectory {
     private final Directory directory;
 
-    SourceDirectory(Directory directory) {
+    public SourceDirectory(Directory directory) {
         this.directory = Objects.requireNonNull(directory);
     }
 
