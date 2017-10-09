@@ -101,7 +101,6 @@ public class LightweightJarExecutor {
     
     private URL[] createClasspath() throws IOException {
         URL classpathClasses = this.classesDir.toUri().toURL();
-//        URL classpathSrc = this.srcDir.toUri().toURL();
         this.copyClassAndResourceFiles();
         return new URL[]{classpathClasses};
     }
