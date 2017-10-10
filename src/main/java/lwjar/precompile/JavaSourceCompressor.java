@@ -52,10 +52,11 @@ public class JavaSourceCompressor {
     
     private String removeLineSeparatorAndComments(CompilationUnit cu) {
         PrettyPrinterConfiguration conf = new PrettyPrinterConfiguration();
+        conf.setVisitorFactory(NoSpacePrintVisitor::new);
 
         if (this.level.satisfies(CompressLevel.REMOVE_LINE_SEPARATOR)) {
             conf.setIndent("");
-            conf.setEndOfLineCharacter(" ");
+            conf.setEndOfLineCharacter("");
         }
 
         if (this.level.satisfies(CompressLevel.REMOVE_COMMENTS)) {
