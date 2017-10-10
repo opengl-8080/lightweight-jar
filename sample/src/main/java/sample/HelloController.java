@@ -8,6 +8,11 @@ public class HelloController {
 
     @GetMapping("/hello")
     public String hello() {
-        return "hello!!";
+        return "hello";
+    }
+
+    @GetMapping("/error")
+    public String error() {
+        throw new NullPointerException();
     }
 }
