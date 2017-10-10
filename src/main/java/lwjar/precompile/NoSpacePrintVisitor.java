@@ -140,9 +140,13 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
         if (annotations.isEmpty()) {
             return;
         }
-        for (final AnnotationExpr a : annotations) {
-            a.accept(this, arg);
-            printer.print(" ");
+
+        for (AnnotationExpr annotation : annotations) {
+            annotation.accept(this, arg);
+
+            if (annotation instanceof MarkerAnnotationExpr) {
+                printer.print(" ");
+            }
         }
     }
 
@@ -156,7 +160,9 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
         }
         for (AnnotationExpr annotation : annotations) {
             annotation.accept(this, arg);
-            printer.print(" ");
+            if (annotation instanceof MarkerAnnotationExpr) {
+                printer.print(" ");
+            }
         }
     }
 
@@ -857,7 +863,7 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
         if (!n.getBody().isPresent()) {
             printer.print(";");
         } else {
-            printer.print(" ");
+//            printer.print(" ");
             n.getBody().get().accept(this, arg);
         }
     }
@@ -1096,7 +1102,7 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
     public void visit(final InitializerDeclaration n, final Void arg) {
         printJavaComment(n.getComment(), arg);
         if (n.isStatic()) {
-            printer.print("static ");
+            printer.print("static");
         }
         n.getBody().accept(this, arg);
     }
@@ -1117,15 +1123,17 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
         if (!thenBlock)
             printer.unindent();
         if (n.getElseStmt().isPresent()) {
-            if (thenBlock)
-                printer.print(" ");
-            else
-                printer.println();
+//            if (thenBlock)
+//                printer.print(" ");
+//            else
+//                printer.println();
             final boolean elseIf = n.getElseStmt().orElse(null) instanceof IfStmt;
             final boolean elseBlock = n.getElseStmt().orElse(null) instanceof BlockStmt;
-            if (elseIf || elseBlock) // put chained if and start of block statement on a same level
+            if (elseBlock) // put chained if and start of block statement on a same level
+                printer.print("else");
+            else if (elseIf) {
                 printer.print("else ");
-            else {
+            } else {
                 printer.println("else ");
 //                printer.indent();
             }
@@ -1293,7 +1301,7 @@ public class NoSpacePrintVisitor extends PrettyPrintVisitor {
         n.getName().accept(this, arg);
         printer.print("()");
         if (n.getDefaultValue().isPresent()) {
-            printer.print(" default ");
+            printer.print("default ");
             n.getDefaultValue().get().accept(this, arg);
         }
         printer.print(";");
