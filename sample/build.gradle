@@ -20,8 +20,8 @@ repositories {
 
 dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
-    // providedCompile 'org.springframework.boot:spring-boot-loader'
-    // providedCompile 'javax:javaee-api:7.0'
+    providedCompile 'org.springframework.boot:spring-boot-loader'
+    providedCompile 'javax:javaee-api:7.0'
 }
 
 import groovy.io.FileType

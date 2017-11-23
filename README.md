@@ -1,6 +1,13 @@
 # lightweight-jar
 
 ```bash
+# collect dependencies
+$ cd sample
+
+$ gradle collectDependencies
+```
+
+```bash
 # build lightweight.jar
 $ gradle fatJar
 
