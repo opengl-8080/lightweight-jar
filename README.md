@@ -1,49 +1,32 @@
 # lightweight-jar
 
-```groovy
-import groovy.io.FileType
-task('collectSource') {
-    configurations.runtime.each { jarFile ->
-        jarFile.parentFile.parentFile.eachFileRecurse(FileType.FILES) { file ->
-            if (file.name =~ /^.*\.jar$/ && file.name.contains('source')) {
-                copy {
-                    from file
-                    into "$buildDir/libs"
-                }
-            }
-        }
-    }
-}
-```
-
-## pre compile comamnd image
 ```bash
-$ java -jar lightweight-jar.jar pre-compile -s to/src/dir -c to/classes/dir
-compiling...
+# build lightweight.jar
+$ gradle fatJar
 
-<output error source file paths (absolute path to use 'rm' command) ...>
+# build sample.jar
+$ java -jar build/libs/lightweight-jar.jar build -a sample/src/main/java -s sample/build/dependencies/unpackaged/source -c sample/build/dependencies/unpackaged/binary --encoding UTF-8 -m sample.Main -j sample --spring-boot
 
---- or ---
-
-completion!!
+# help
+$ java -jar build/libs/lightweight-jar.jar build --help
+usage: java -jar lightweight-jar.jar build
+ -a,--application-source <arg>   A path of application sources directory.
+                                 (REQUIRED)
+ -c,--library-class <arg>        A path of library class files directory.
+                                 (REQUIRED)
+ -e,--encoding <arg>             The character encoding. Default is
+                                 depended on an environment.
+ -h,--help                       Print command help.
+ -j,--jar-name <arg>             A base name of output jar file.
+                                 (REQUIRED)
+ -l,--compress-level <arg>       The source code compress level (0, 1, 2,
+                                 3, 4). Default is 4.
+ -m,--main-class <arg>           A main class name. (REQUIRED)
+ -o,--output <arg>               A path of output directory. Default is
+                                 './out'.
+ -r,--retry-count <arg>          The number of retry to compile. Default
+                                 is 100.
+ -s,--library-source <arg>       A path of library sources directory.
+                                 (REQUIRED)
+    --spring-boot                Flag of Spring Boot application.
 ```
-
-## 苦悩点
-- ソースの収集
-    - Gradle の依存関係の解決を利用
-- コンパイル時のエラー
-    - 推移的な依存関係の解決では解消できない依存関係が存在するする
-    - そのまま実行時に参照されると、 NoClassDefError が発生するはず
-    - 必要と言われたソースを集めようとすると、手作業でソースを集めてこなければならない
-    - エラーになったソースはコンパイルをあきらめ、 class ファイルをそのまま利用
-        - インナークラスを含んだものもあるので、単純にソース名と class ファイル名が一対一では対応していない
-    - 一回の javac で出力されるエラーファイルの数には限りがあるので、エラー→対象ソースの除去を２０周ほど繰り返す
-    - Java EE の API への推移的な依存が全くなく、実際にコンパイルしてエラーが起こったもの（必要なもの）だけを抽出
-- 実行時のエラー
-    - それでも実行すると NoClassDefError が発生する
-    - Spring の一部のモジュールが、バイナリの jar には class ファイルがあるのに、ソースをまとめた jar には対応するソースコードが入っていないものがある
-    - バイナリ jar の中にある class ファイルとソース jar ファイルの中にある java ファイルを比較し、 class ファイルしかないものを抽出
-        - こちらもインナークラスを考慮しないといけない
-
-
-
